@@ -55,6 +55,16 @@ export const INBOX_TOGGLE_OPEN = "INBOX_TOGGLE_OPEN";         // panel open/coll
 export const INBOX_COPY = "INBOX_COPY";         // payload: { id, variant } — side effect in flow
 export const INBOX_REFINE = "INBOX_REFINE";     // payload: { id, refinedText } — async refinement result
 export const INBOX_CLEAR_ALL = "INBOX_CLEAR_ALL";
+export const INBOX_RESTORE = "INBOX_RESTORE";   // 3C-3A: boot-time restore of persisted thoughts — payload: { thoughts }
+
+// Composer draft persistence + edit history (3C-3A)
+export const RESTORE_DRAFT = "RESTORE_DRAFT";   // payload: { text } — boot-time draft restore (no AI, no submit)
+export const DRAFT_SAVED = "DRAFT_SAVED";       // debounce flush completed — draft now SAVED
+export const UNDO_INPUT = "UNDO_INPUT";         // pop edit history → Composer
+export const REDO_INPUT = "REDO_INPUT";         // push edit history back → Composer
+
+// AI mode visibility (3C-3A §5) — "real" | "demo"; Demo must never masquerade as Real
+export const AI_MODE = "AI_MODE";               // payload: { mode }
 
 // Review version choice (Original = exact user input; Optimized = Prompt Intelligence output)
 export const USE_ORIGINAL = "USE_ORIGINAL";
@@ -91,7 +101,7 @@ export const act = {
   restoreFloat: () => ({ type: RESTORE_FLOAT }),
   setPosition: (x, y) => ({ type: SET_POSITION, x, y }),
   startInput: () => ({ type: START_INPUT }),
-  updateInput: (text) => ({ type: UPDATE_INPUT, text }),
+  updateInput: (text, opts) => ({ type: UPDATE_INPUT, text, ...(opts || {}) }),
   submitThought: () => ({ type: SUBMIT_THOUGHT }),
   understandingStep: (step) => ({ type: UNDERSTANDING_STEP, step }),
   completeUnderstanding: (analysis) => ({ type: COMPLETE_UNDERSTANDING, analysis }),
@@ -124,6 +134,12 @@ export const act = {
   inboxCopy: (id, variant) => ({ type: INBOX_COPY, id, variant }),
   inboxRefine: (id, refinedText) => ({ type: INBOX_REFINE, id, refinedText }),
   inboxClearAll: () => ({ type: INBOX_CLEAR_ALL }),
+  inboxRestore: (thoughts) => ({ type: INBOX_RESTORE, thoughts }),
+  restoreDraft: (text) => ({ type: RESTORE_DRAFT, text }),
+  draftSaved: () => ({ type: DRAFT_SAVED }),
+  undoInput: () => ({ type: UNDO_INPUT }),
+  redoInput: () => ({ type: REDO_INPUT }),
+  aiMode: (mode) => ({ type: AI_MODE, mode }),
   useOriginal: () => ({ type: USE_ORIGINAL }),
   useOptimized: () => ({ type: USE_OPTIMIZED }),
   copyPrompt: () => ({ type: COPY_PROMPT }),

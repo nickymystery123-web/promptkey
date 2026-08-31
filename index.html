@@ -57,6 +57,7 @@
   <!-- Layer 01 · System Bar -->
   <div class="pk-system-bar" id="pk-drag-handle">
     <span class="pk-status" id="pk-status"><span class="pk-status-dot" id="pk-status-dot"></span><span class="pk-status-label" id="pk-status-label" aria-live="polite">READY</span></span>
+    <span class="pk-ai-mode" id="pk-ai-mode" hidden></span>
     <span class="pk-identity">PROMPTKEY FLOAT</span>
     <span class="pk-win-btns">
       <button class="pk-win-btn" id="pk-min-btn" type="button" aria-label="Minimize">—</button>
@@ -97,7 +98,15 @@
     </div>
 
     <div class="pk-view pk-view-input" data-view="input">
-      <p class="pk-view-label" id="pk-input-label">YOUR THOUGHT</p>
+      <div class="pk-input-head">
+        <p class="pk-view-label" id="pk-input-label">YOUR THOUGHT</p>
+        <span class="pk-draft-badge" id="pk-draft-badge" hidden></span>
+        <span class="pk-draft-saved" id="pk-draft-saved" hidden></span>
+        <span class="pk-input-tools">
+          <button class="pk-input-tool" id="pk-undo" type="button" aria-label="Undo (Ctrl+Z)" aria-keyshortcuts="Control+Z" disabled>↺</button>
+          <button class="pk-input-tool" id="pk-redo" type="button" aria-label="Redo (Ctrl+Shift+Z)" aria-keyshortcuts="Control+Shift+Z" disabled>↻</button>
+        </span>
+      </div>
       <textarea id="pk-input" class="pk-input-area" maxlength="2000"
         placeholder="Type your thought here..." aria-label="Thought input"></textarea>
       <div class="pk-transcript" id="pk-transcript" hidden>

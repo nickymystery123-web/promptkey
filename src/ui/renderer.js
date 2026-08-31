@@ -5,7 +5,8 @@ import { SECTION_NAMES, sectionToText } from "../models/prompt.js";
 import { act } from "../state/actions.js";
 import {
   effectiveStatus, statusLabel, sectionKeys,
-  customButtonsEnabled, isProcessing, currentPrompt, inboxThoughts, canRefine, canConfirm
+  customButtonsEnabled, isProcessing, currentPrompt, inboxThoughts, canRefine, canConfirm,
+  draftBadgeLabel, draftSavedLabel, canUndoInput, canRedoInput, aiModeLabel
 } from "../state/selectors.js";
 import { thoughtCopyText, thoughtPreview } from "../models/thought.js";
 
@@ -38,6 +39,11 @@ export function collectRefs(doc) {
     submit: $("pk-submit"),
     copyBtn: $("pk-copy-btn"),
     newBtn: $("pk-new-btn"),
+    aiMode: $("pk-ai-mode"),
+    draftBadge: $("pk-draft-badge"),
+    draftSaved: $("pk-draft-saved"),
+    undo: $("pk-undo"),
+    redo: $("pk-redo"),
     minimized: $("pk-minimized"),
     pill: $("pk-pill"),
     toast: $("pk-toast"),
@@ -440,6 +446,38 @@ export function createRenderer(refs, store) {
     // programmatic updates (voice append, REFINE results, USE take-back).
     if (refs.input.value !== state.input) {
       refs.input.value = state.input;
+    }
+    // 3C-3A §7: after UNDO/REDO the caret is restored to the entry's saved
+    // selection (typing clears it in the machine — no repeated re-apply).
+    if (state.inputSelection && refs.input.value === state.input && refs.input.setSelectionRange) {
+      try {
+        refs.input.setSelectionRange(state.inputSelection.start, state.inputSelection.end);
+      } catch (e) { /* detached input — skip */ }
+    }
+
+    // 3C-3A §8: draft badge (EMPTY/DRAFT/DRAFT·VOICE/DRAFT·THOUGHT) + SAVED/UNSAVED
+    if (refs.draftBadge) refs.draftBadge.textContent = draftBadgeLabel(state);
+    if (refs.draftSaved) {
+      const savedLabel = draftSavedLabel(state);
+      refs.draftSaved.hidden = !savedLabel;
+      if (savedLabel) {
+        refs.draftSaved.textContent = savedLabel;
+        refs.draftSaved.classList.toggle("unsaved", savedLabel === "UNSAVED");
+      }
+    }
+    // 3C-3A §7.6: undo/redo buttons — disabled state must reflect canUndo/canRedo
+    if (refs.undo) refs.undo.disabled = !canUndoInput(state);
+    if (refs.redo) refs.redo.disabled = !canRedoInput(state);
+
+    // 3C-3A §5: AI mode indicator — hidden until the first AI call reveals it.
+    // DEMO is always visually distinct (never masquerades as REAL).
+    if (refs.aiMode) {
+      const label = aiModeLabel(state);
+      refs.aiMode.hidden = !label;
+      if (label) {
+        refs.aiMode.textContent = label;
+        refs.aiMode.className = "pk-ai-mode " + (state.aiMode === "demo" ? "demo" : "real");
+      }
     }
 
     // controls

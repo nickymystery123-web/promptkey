@@ -8,7 +8,7 @@ import { thoughtCopyText } from "../models/thought.js";
 
 export function createFlows({ store, ai, voice, delivery, storage, delays = {} }) {
   const d = Object.assign(
-    { understandStep: 620, understandFirst: 420, structuringSettle: 320, readyToSend: 500, sending: 900, transcribing: 500 },
+    { understandStep: 620, understandFirst: 420, structuringSettle: 320, readyToSend: 500, sending: 900, transcribing: 500, draftDebounce: 500 },
     delays
   );
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -43,6 +43,38 @@ export function createFlows({ store, ai, voice, delivery, storage, delays = {} }
       catch (e) { store.dispatch(act.error(ERR.STORAGE_ERROR, "Session could not be saved.")); }
     }
   }
+
+  /* ---- 3C-3A persistence side effects (flows = the only services caller) ----
+     1) Composer draft: debounced auto-save (§6.1) — one write per quiet 500ms,
+        never one per keypress. flushDraft() is the forced final save for
+        pagehide / visibilitychange (§6.2). Storage failures degrade silently
+        (§6.6): the Composer itself never breaks.
+     2) Creative Inbox: saved on every thoughts mutation — REFINE add, EDIT,
+        DELETE, INBOX_REFINE metadata, CLEAR ALL, RESET (§4.3). */
+  let draftTimer = null;
+  async function saveDraftNow() {
+    if (draftTimer) { clearTimeout(draftTimer); draftTimer = null; }
+    try {
+      await storage.saveDraft(S().input || "");
+      store.dispatch(act.draftSaved()); // SAVED badge flip (no-op if already saved)
+    } catch (e) { /* storage unavailable — silent degrade */ }
+  }
+  function scheduleDraftSave() {
+    if (draftTimer) clearTimeout(draftTimer);
+    draftTimer = setTimeout(() => { draftTimer = null; saveDraftNow(); }, d.draftDebounce);
+  }
+  function flushDraft() { return saveDraftNow(); }
+  async function clearDraftNow() {
+    if (draftTimer) { clearTimeout(draftTimer); draftTimer = null; }
+    try { await storage.clearDraft(); } catch (e) { /* silent degrade */ }
+  }
+
+  store.subscribe((state, prev) => {
+    if (state.input !== prev.input) scheduleDraftSave();
+    if (state.inbox.thoughts !== prev.inbox.thoughts) {
+      try { storage.saveInbox(state.inbox.thoughts); } catch (e) { /* silent degrade */ }
+    }
+  });
 
   /* ---- Thought → Understanding → Structuring → Review ---- */
   async function submitThought() {
@@ -122,6 +154,10 @@ export function createFlows({ store, ai, voice, delivery, storage, delays = {} }
       await wait(d.sending);
       if (S().interaction !== "sending") return;
       store.dispatch(act.deliveryComplete());
+      // 3C-3A §6.4: a COMPLETED submit clears the persisted draft. The in-state
+      // text stays until NEW (the delivered view owns the screen), but the disk
+      // draft is gone — a refresh after DELIVERED starts clean.
+      await clearDraftNow();
     } catch (e) {
       store.dispatch(act.error(ERR.DELIVERY_ERROR, "Delivery failed. Your prompt is still here."));
     }
@@ -144,6 +180,9 @@ export function createFlows({ store, ai, voice, delivery, storage, delays = {} }
     voiceSession += 1;    // kills any in-flight voice finalization
     voiceFlowActive = false;
     killPendingRequest(); // user restarted — cancel pending AI work
+    // 3C-3A §6.4: explicit NEW clears the persisted draft (machine clears the
+    // in-state draft + history). REFINE/Voice/ADD/USE/Review never clear it.
+    clearDraftNow();
     store.dispatch(act.newThought());
   }
 
@@ -257,11 +296,12 @@ export function createFlows({ store, ai, voice, delivery, storage, delays = {} }
   async function addThoughtFromInbox() {
     // 3C-2B: "ADD" now means "place into the Composer" — set if empty, else
     // append. The user can then REFINE it into the inbox, or send it directly.
+    // 3C-3A: a PROGRAMMATIC append (independent history step; plain DRAFT badge).
     const draft = (S().inbox.draft || "").trim();
     if (!draft) return;
     const current = S().input || "";
     const merged = current ? current + (draft ? " " + draft : "") : draft;
-    store.dispatch(act.updateInput(merged));
+    store.dispatch(act.updateInput(merged, { programmatic: true }));
     store.dispatch(act.inboxUpdateDraft("")); // consumed the capture field
     store.dispatch(act.showMessage("Added to your prompt."));
   }
@@ -313,9 +353,12 @@ export function createFlows({ store, ai, voice, delivery, storage, delays = {} }
     }
   }
 
-  /* USE (3C-2B): take a Thought back into the Composer — NO auto-submit.
-     The user gets the refined text (or original) into the Composer and stays in
-     full control: edit it, REFINE it again, or submit via the Composer entry. */
+  /* USE (3C-3A DECISION #1): take a Thought back into the Composer as a
+     NON-DESTRUCTIVE APPEND — NO auto-submit, NO Thought consumption.
+     The user's existing draft is preserved; the Thought text is appended
+     after a blank-line separator. Only the join boundary is normalized
+     (existing.trimEnd() + "\n\n" + thought.trim()); the interior of the
+     existing Composer text is never modified. */
   async function sendThoughtToPrompt(id) {
     const thought = S().inbox.thoughts.find((t) => t.id === id);
     if (!thought) return;
@@ -326,8 +369,10 @@ export function createFlows({ store, ai, voice, delivery, storage, delays = {} }
     voiceFlowActive = false;
     killPendingRequest();    // don't let an in-flight analysis race the take-back
     lastInputSource = thought.source; // the thought's origin flows through the pipeline
-    store.dispatch(act.updateInput(trimmed));
-    store.dispatch(act.showMessage("Brought back to your prompt — edit or send it."));
+    const existing = (S().input || "").trimEnd();
+    const merged = existing ? existing + "\n\n" + trimmed : trimmed;
+    store.dispatch(act.updateInput(merged, { origin: "thought", programmatic: true }));
+    store.dispatch(act.showMessage("Added to your prompt — edit or send it."));
   }
 
   async function copyThoughtToClipboard(id, variant) {
@@ -356,6 +401,7 @@ export function createFlows({ store, ai, voice, delivery, storage, delays = {} }
     closeFloat,
     bindVoiceCallbacks,
     persistSession,
+    flushDraft,
     addThoughtFromInbox,
     refineFromComposer,
     sendThoughtToPrompt,

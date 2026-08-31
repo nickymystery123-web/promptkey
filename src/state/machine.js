@@ -7,6 +7,7 @@
    Plus data slices: input draft, session, understandStep, error, feedback. */
 
 import * as A from "./actions.js";
+import { createHistory, pushEntry, undo as undoHistory, redo as redoHistory } from "./history.js";
 import { createStructuredPrompt, clonePrompt, visibleSectionKeys, textToSectionValue } from "../models/prompt.js";
 import { createSession, withAnalysis, applyVersion, withSelectedSection, withSelection } from "../models/session.js";
 import { createThought, withOriginalText } from "../models/thought.js";
@@ -19,6 +20,11 @@ export const initialState = {
   voiceTranscript: null, // { text, final } — live preview while listening; never sent to AI until final
   preVoiceInput: null,   // input draft before the voice session (restored on cancel)
   input: "",
+  inputOrigin: null,     // "voice" | "thought" | null — provenance of the last Composer write (draft badge)
+  draftSaved: true,      // Composer draft persistence state (SAVED / UNSAVED)
+  inputSelection: null,  // { start, end } — caret to restore after UNDO/REDO
+  history: createHistory(""), // application-level Composer edit history (3C-3A §7)
+  aiMode: "unknown",     // "real" | "demo" | "unknown" — Demo must never masquerade as Real (3C-3A §5)
   session: null,
   inbox: {
     thoughts: [],     // Thought[] — independent of session (see models/thought.js)
@@ -81,6 +87,33 @@ function withError(state, code, message) {
 
 function currentPrompt(state) {
   return state.session ? state.session.currentPrompt : null;
+}
+
+/* Shared Composer-write helper (3C-3A): every path that writes the Composer
+   (user typing, voice append, USE append, inbox ADD, cancel-restore) funnels
+   through here so the draft-dirty flag, the provenance badge and the
+   application-level edit history stay consistent.
+     origin:       "voice" | "thought" | null → DRAFT · VOICE / DRAFT · THOUGHT badge
+     programmatic: true → the history entry is an INDEPENDENT step (no typing
+                   coalescing), per 3C-3A §7.4
+   Interior text is never modified — only the whole value is set by the caller. */
+function withComposer(state, text, { origin = null, programmatic = false, selectionStart, selectionEnd, now = Date.now() } = {}) {
+  const t = typeof text === "string" ? text : "";
+  const changed = t !== state.input;
+  let interaction = state.interaction;
+  if (interaction === "idle" && t.trim()) interaction = "input";
+  if (interaction === "input" && !t.trim()) interaction = "idle";
+  return {
+    ...state,
+    input: t,
+    interaction,
+    inputOrigin: changed ? (t.trim() ? origin : null) : state.inputOrigin,
+    draftSaved: changed ? false : state.draftSaved,
+    inputSelection: null, // typing/programmatic writes own the caret; only UNDO/REDO set it
+    history: changed
+      ? pushEntry(state.history, { value: t, selectionStart, selectionEnd }, { programmatic, now })
+      : state.history
+  };
 }
 
 /* Move selection within visible sections; returns new session */
@@ -157,17 +190,22 @@ export function reducer(state = initialState, action) {
         const incoming = action.text || "";
         const current = state.input || "";
         const merged = current ? current + (incoming ? " " + incoming : "") : incoming;
-        return { ...state, voiceTranscript: transcript, input: merged };
+        // 3C-3A: a voice final is a PROGRAMMATIC Composer write — independent
+        // history step (undo removes the whole spoken append), DRAFT · VOICE
+        // provenance, draft marked dirty for the debounced save.
+        const next = withComposer(state, merged, { origin: "voice", programmatic: true });
+        return { ...next, voiceTranscript: transcript };
       }
       return { ...state, voiceTranscript: transcript };
     }
     if (type === A.VOICE_CANCEL) {
       if (!["listening", "processing"].includes(state.voice)) return state;
+      // 3C-3A: the pre-voice restore is a programmatic write — independent
+      // history step, plain DRAFT provenance, draft dirty (may differ from disk).
       return {
-        ...state,
+        ...withComposer(state, state.preVoiceInput != null ? state.preVoiceInput : state.input, { programmatic: true }),
         voice: "idle",
         voiceTranscript: null,
-        input: state.preVoiceInput != null ? state.preVoiceInput : state.input,
         preVoiceInput: null,
         message: { text: "Voice input cancelled.", ts: Date.now() }
       };
@@ -220,6 +258,16 @@ export function reducer(state = initialState, action) {
         expandedIds: state.inbox.expandedIds
       }
     };
+  }
+  if (type === A.INBOX_RESTORE) {
+    // 3C-3A §4.4: boot-time restore of persisted thoughts. Order is kept
+    // as stored (storage sanitizes entries). Never clobbers live thoughts.
+    const list = Array.isArray(action.thoughts)
+      ? action.thoughts.filter((t) => t && typeof t.id === "string" && t.id && typeof t.originalText === "string")
+      : [];
+    if (!list.length) return state;
+    if (state.inbox.thoughts.length) return state; // runtime state wins
+    return { ...state, inbox: { ...state.inbox, thoughts: list } };
   }
   if (type === A.INBOX_UPDATE_DRAFT) {
     return { ...state, inbox: { ...state.inbox, draft: action.text || "" } };
@@ -278,17 +326,73 @@ export function reducer(state = initialState, action) {
     return withError({ ...state, interaction: stable }, action.code || A.ERR.UNKNOWN_ERROR, action.message || "Something interrupted the flow. Try again.");
   }
 
-  /* ----- input ----- */
+  /* ----- input -----
+     UPDATE_INPUT carries optional 3C-3A payload:
+       origin: "voice" | "thought" | null — provenance for the draft badge
+       programmatic: true — voice/USE/ADD writes form independent history steps
+       selectionStart/selectionEnd — caret at the time of a user keystroke */
   if (type === A.START_INPUT) {
     if (state.interaction !== "idle") return state;
     return { ...state, interaction: "input" };
   }
   if (type === A.UPDATE_INPUT) {
-    const text = action.text || "";
+    const next = withComposer(state, action.text || "", {
+      origin: action.origin || null,
+      programmatic: !!action.programmatic,
+      selectionStart: action.selectionStart,
+      selectionEnd: action.selectionEnd,
+      now: typeof action.now === "number" ? action.now : undefined // test time injection
+    });
+    return { ...next, error: null };
+  }
+  if (type === A.RESTORE_DRAFT) {
+    // 3C-3A §6.3: boot-time draft restore. The EXACT saved text comes back —
+    // no AI, no REFINE, no auto-submit. History baseline = restored text, so
+    // the first Undo after a restore undoes the user's next edit, not the
+    // restore itself. Never clobbers live state (window re-open keeps draft).
+    const t = typeof action.text === "string" ? action.text : "";
+    if (!t.trim() || state.input) return state;
+    return {
+      ...state,
+      input: t,
+      interaction: "input",
+      inputOrigin: null,
+      draftSaved: true, // restored from disk — already saved
+      inputSelection: null,
+      history: createHistory(t, 0),
+      error: null
+    };
+  }
+  if (type === A.DRAFT_SAVED) {
+    // debounce flush completed — the persisted draft now equals state.input
+    return state.draftSaved ? state : { ...state, draftSaved: true };
+  }
+  if (type === A.UNDO_INPUT || type === A.REDO_INPUT) {
+    // Composer edit history exists only while the Composer is live (idle/input).
+    // After SUBMIT (understanding…delivered) the draft has already been consumed
+    // by the pipeline — undoing there would corrupt the flow (§7, X-2).
+    if (!["idle", "input"].includes(state.interaction)) return state;
+    const u = type === A.UNDO_INPUT ? undoHistory(state.history) : redoHistory(state.history);
+    if (!u) return state;
+    const entry = u.entry;
     let interaction = state.interaction;
-    if (interaction === "idle" && text.trim()) interaction = "input";
-    if (interaction === "input" && !text.trim()) interaction = "idle";
-    return { ...state, input: text, interaction, error: null };
+    if (interaction === "idle" && entry.value.trim()) interaction = "input";
+    if (interaction === "input" && !entry.value.trim()) interaction = "idle";
+    return {
+      ...state,
+      input: entry.value,
+      interaction,
+      inputOrigin: null, // the user took manual control of the text
+      draftSaved: false, // differs from the disk draft until the next flush
+      inputSelection: { start: entry.selectionStart, end: entry.selectionEnd },
+      history: u.history,
+      error: null
+    };
+  }
+  if (type === A.AI_MODE) {
+    const mode = action.mode === "real" || action.mode === "demo" ? action.mode : "unknown";
+    if (state.aiMode === mode) return state;
+    return { ...state, aiMode: mode };
   }
 
   /* ----- thought flow ----- */
@@ -414,6 +518,7 @@ export function reducer(state = initialState, action) {
   /* ----- lifecycle ----- */
   if (type === A.NEW_THOUGHT) {
     // New prompt session, but the Creative Inbox survives (user's ideas persist).
+    // 3C-3A: NEW also clears the Composer draft (persisted + history + badge).
     return {
       ...state,
       interaction: "idle",
@@ -421,6 +526,10 @@ export function reducer(state = initialState, action) {
       voiceTranscript: null,
       preVoiceInput: null,
       input: "",
+      inputOrigin: null,
+      draftSaved: true,
+      inputSelection: null,
+      history: createHistory(""),
       session: null,
       editingSection: null,
       understandStep: -1,
@@ -437,6 +546,10 @@ export function reducer(state = initialState, action) {
       voiceTranscript: null,
       preVoiceInput: null,
       input: "",
+      inputOrigin: null,
+      draftSaved: true,
+      inputSelection: null,
+      history: createHistory(""),
       session: null,
       editingSection: null,
       understandStep: -1,

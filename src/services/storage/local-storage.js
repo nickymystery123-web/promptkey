@@ -6,12 +6,42 @@
      clearSession(id): Promise<void>
      savePosition(pos): Promise<void>   // window manager uses these two
      loadPosition(): Promise<{x,y} | null>
+     saveInbox(thoughts): Promise<void> // 3C-3A: Creative Inbox persistence
+     loadInbox(): Promise<Thought[]>
+     clearInbox(): Promise<void>
+     saveDraft(text): Promise<void>     // 3C-3A: Composer draft persistence
+     loadDraft(): Promise<string>
+     clearDraft(): Promise<void>
    }
+
+   All reads/writes are wrapped in try/catch (safeGet/safeSet/safeRemove), so a
+   missing/unavailable/corrupt localStorage (private mode, quota, bad JSON)
+   degrades silently — the in-session product keeps working (3C-3A §4.6).
 
    Future: BackendStorage / Database / Cloud Sync — core logic unchanged. */
 
 const POS_KEY = "pk-float:position";
 const SESSION_KEY = "pk-float:session:";
+const INBOX_KEY = "pk-float:inbox";
+const DRAFT_KEY = "pk-float:draft";
+
+/* 3C-3A §4.1/§4.2: persist the full Thought record (id/originalText/
+   refinedText/source/createdAt/updatedAt — every field the UI and logic use).
+   On load, each entry is validated & sanitized; anything malformed is dropped
+   rather than crashing the restore. */
+function sanitizeThought(t) {
+  if (!t || typeof t !== "object") return null;
+  if (typeof t.id !== "string" || !t.id) return null;
+  if (typeof t.originalText !== "string" || !t.originalText.trim()) return null;
+  return {
+    id: t.id,
+    originalText: t.originalText,
+    refinedText: typeof t.refinedText === "string" && t.refinedText.trim() ? t.refinedText : null,
+    source: t.source === "voice" ? "voice" : "text",
+    createdAt: typeof t.createdAt === "string" ? t.createdAt : new Date().toISOString(),
+    updatedAt: typeof t.updatedAt === "string" ? t.updatedAt : new Date().toISOString()
+  };
+}
 
 export function createLocalStorageService(store) {
   const ls = store || (typeof localStorage !== "undefined" ? localStorage : null);
@@ -49,6 +79,43 @@ export function createLocalStorageService(store) {
         const p = JSON.parse(raw);
         return typeof p.x === "number" && typeof p.y === "number" ? p : null;
       } catch (e) { return null; }
+    },
+    /* ---- Creative Inbox persistence (3C-3A §4) ---- */
+    async saveInbox(thoughts) {
+      if (!Array.isArray(thoughts)) return;
+      safeSet(INBOX_KEY, JSON.stringify({ v: 1, thoughts }));
+    },
+    async loadInbox() {
+      const raw = safeGet(INBOX_KEY);
+      if (!raw) return [];
+      try {
+        const data = JSON.parse(raw);
+        const list = Array.isArray(data)
+          ? data
+          : (data && typeof data === "object" && Array.isArray(data.thoughts) ? data.thoughts : null);
+        if (!list) return [];
+        return list.map(sanitizeThought).filter(Boolean); // corrupt entries dropped, order kept
+      } catch (e) { return []; } // corrupt storage → empty inbox, never a crash
+    },
+    async clearInbox() {
+      safeRemove(INBOX_KEY);
+    },
+    /* ---- Composer draft persistence (3C-3A §6) ---- */
+    async saveDraft(text) {
+      if (typeof text !== "string" || !text) { safeRemove(DRAFT_KEY); return; }
+      safeSet(DRAFT_KEY, JSON.stringify({ v: 1, text }));
+    },
+    async loadDraft() {
+      const raw = safeGet(DRAFT_KEY);
+      if (!raw) return "";
+      try {
+        const data = JSON.parse(raw);
+        if (typeof data === "string") return data; // legacy bare-string format
+        return data && typeof data.text === "string" ? data.text : "";
+      } catch (e) { return ""; }
+    },
+    async clearDraft() {
+      safeRemove(DRAFT_KEY);
     }
   };
 }

@@ -170,6 +170,37 @@ button{font-family:inherit;cursor:pointer}
 @keyframes pk-blink{50%{opacity:0}}
 
 .pk-view-label{font-family:var(--pk-mono);font-size:10px;letter-spacing:.16em;color:var(--pk-text-secondary);margin:0 0 10px;flex:none}
+
+/* ---- 3C-3A: Composer workspace head (draft badge + undo/redo tools) ----
+   Deliberately minimal: mono micro-labels, no banners, no layout shifts. */
+.pk-input-head{display:flex;align-items:center;gap:8px;margin:0 0 10px;flex:none;min-height:14px}
+.pk-input-head .pk-view-label{margin:0}
+.pk-draft-badge{
+  font-family:var(--pk-mono);font-size:9px;letter-spacing:.14em;color:var(--pk-text-secondary);
+  border:1px solid var(--pk-border);border-radius:99px;padding:1px 8px;white-space:nowrap;
+}
+.pk-draft-saved{font-family:var(--pk-mono);font-size:9px;letter-spacing:.14em;color:var(--pk-text-secondary);white-space:nowrap}
+.pk-draft-saved.unsaved{color:var(--pk-warn, #8a6d1a)}
+.pk-input-tools{margin-left:auto;display:flex;align-items:center;gap:4px}
+.pk-input-tools[hidden]{display:none}
+.pk-input-tool{
+  appearance:none;border:1px solid var(--pk-border);background:var(--pk-surface);color:var(--pk-text-secondary);
+  font-family:var(--pk-mono);font-size:12px;line-height:1;width:24px;height:20px;border-radius:6px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:color .18s var(--pk-ease),border-color .18s var(--pk-ease),opacity .18s var(--pk-ease);
+}
+.pk-input-tool:hover:not(:disabled){color:var(--pk-text-primary);border-color:var(--pk-text-primary)}
+.pk-input-tool:disabled{opacity:.32;cursor:default}
+
+/* ---- 3C-3A: AI mode indicator (system bar) — REAL / DEMO ----
+   DEMO is always visually distinct: Demo must never masquerade as Real. */
+.pk-ai-mode{
+  font-family:var(--pk-mono);font-size:9px;letter-spacing:.14em;color:var(--pk-text-secondary);
+  border:1px solid var(--pk-border);border-radius:99px;padding:1px 7px;white-space:nowrap;flex:none;
+}
+.pk-ai-mode[hidden]{display:none}
+.pk-ai-mode.demo{color:var(--pk-warn, #8a6d1a);border-color:currentColor}
+.pk-ai-mode.real{color:var(--pk-ok)}
 .pk-input-area{
   flex:1;min-height:0;width:100%;resize:none;border:0;background:transparent;
   font-family:var(--pk-sans);font-size:17px;line-height:1.6;color:var(--pk-text-primary);

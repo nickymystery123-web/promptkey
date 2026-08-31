@@ -1,6 +1,7 @@
 /* Selectors — all derived UI-facing reads in one place. */
 
 import { visibleSectionKeys, createStructuredPrompt, promptToText } from "../models/prompt.js";
+import { canUndo, canRedo } from "./history.js";
 
 /* What the System Bar + CSS data-status should show.
    Voice slice overrides interaction when active. */
@@ -117,4 +118,40 @@ export function inboxExpandedIds(state) {
 
 export function isInboxExpanded(state, id) {
   return inboxExpandedIds(state).includes(id);
+}
+
+/* ---- 3C-3A: Composer draft badge (§8) ----
+   EMPTY / DRAFT / DRAFT · VOICE / DRAFT · THOUGHT — provenance of the last
+   Composer write. Manual typing resets to plain DRAFT. */
+export function draftBadgeLabel(state) {
+  const text = (state.input || "").trim();
+  if (!text) return "EMPTY";
+  if (state.inputOrigin === "voice") return "DRAFT · VOICE";
+  if (state.inputOrigin === "thought") return "DRAFT · THOUGHT";
+  return "DRAFT";
+}
+
+/* SAVED / UNSAVED — the draft-persistence state (NOT the flow statusLabel). */
+export function draftSavedLabel(state) {
+  const text = (state.input || "").trim();
+  if (!text) return ""; // nothing to save — indicator hidden
+  return state.draftSaved ? "SAVED" : "UNSAVED";
+}
+
+/* ---- 3C-3A: edit history (§7) ----
+   Buttons/shortcuts reflect BOTH the history stack and the machine guard
+   (UNDO/REDO only operate while the Composer is live — idle/input). */
+export function canUndoInput(state) {
+  return ["idle", "input"].includes(state.interaction) && canUndo(state.history);
+}
+
+export function canRedoInput(state) {
+  return ["idle", "input"].includes(state.interaction) && canRedo(state.history);
+}
+
+/* ---- 3C-3A: AI mode visibility (§5) ---- */
+export function aiModeLabel(state) {
+  if (state.aiMode === "real") return "AI · REAL";
+  if (state.aiMode === "demo") return "AI · DEMO";
+  return ""; // unknown until the first AI call — indicator hidden
 }

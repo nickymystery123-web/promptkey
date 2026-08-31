@@ -1,7 +1,8 @@
 /* PHASE 3C-2B — 专项交叉场景测试（Task #40）。
    聚焦既有 inbox/voice-loop/repro-bugs 未覆盖的交叉验证（用户 18 条指令第 3-10 条）：
      A. canRefine / canConfirm 门禁（selectors 层）
-     B. USE 覆盖式 merge 行为（replace，非 append；不静默清空；不自动 submit）
+     B. USE merge 行为（3C-3A 起 USE=append：非破坏性追加、不静默清空、不自动 submit；
+        3C-2B 时代为 replace，测试契约随 FINAL 产品决策更新）
      C. Composer 编辑闭环 + Voice 多轮交叉（内容不丢、中间编辑不丢、追加合并；
         provider pause 自动 restart 对 flow 不可见）
      D. Creative Inbox 编辑中不被列表重建覆盖（renderer DOM 层）
@@ -146,16 +147,23 @@ test("A2: canConfirm — review true；input+文本 true；空 false；delivered
   assert.equal(canConfirm(h.store.getState()), false, "delivered 不可重复 SUBMIT");
 });
 
-/* ==================== B. USE 覆盖式 merge 行为 ==================== */
-test("B1: USE 以 Thought 文本【覆盖】现有 Composer 内容（replace，非 append），且不自动 submit", async () => {
+/* ==================== B. USE append 行为（3C-3A DECISION #1） ====================
+   TEST CONTRACT CHANGED (3C-3A): USE replace → USE append.
+   B1/B4 originally asserted the 3C-2B replace contract; they now assert the
+   FINAL 3C-3A product contract — USE never overwrites existing draft. */
+test("B1: USE 将 Thought 文本【追加】到现有 Composer 内容（append，非 replace），已有内容不丢失，且不自动 submit", async () => {
   const h = harness();
   h.store.dispatch(act.inboxAddRefined("idea", "text"));
   const id = h.store.getState().inbox.thoughts[0].id;
   h.store.dispatch(act.inboxRefine(id, "REFINED ▸ idea"));
-  h.store.dispatch(act.updateInput("existing typed draft that should be replaced"));
+  h.store.dispatch(act.updateInput("existing typed draft that must survive"));
   await h.flows.sendThoughtToPrompt(id);
   const s = h.store.getState();
-  assert.equal(s.input, "REFINED ▸ idea", "USE 是覆盖式设置，不是追加");
+  assert.equal(
+    s.input,
+    "existing typed draft that must survive\n\nREFINED ▸ idea",
+    "USE 是追加（\\n\\n 分隔），不是覆盖"
+  );
   assert.equal(s.interaction, "input", "USE 不自动 submit");
   assert.equal(h.ai.calls.analyze, 0, "USE 本身不调用 AI");
 });
@@ -178,7 +186,7 @@ test("B3: USE 未知 id 是 no-op —— Composer 内容不被静默清空", asy
   assert.equal(h.ai.calls.analyze, 0);
 });
 
-test("B4: USE 取回后 Thought 不被消费/删除（可再次 USE）", async () => {
+test("B4: USE 取回后 Thought 不被消费/删除（可再次 USE，追加不覆盖）", async () => {
   const h = harness();
   h.store.dispatch(act.inboxAddRefined("reusable idea", "text"));
   const id = h.store.getState().inbox.thoughts[0].id;
@@ -186,9 +194,13 @@ test("B4: USE 取回后 Thought 不被消费/删除（可再次 USE）", async (
   await h.flows.sendThoughtToPrompt(id);
   assert.equal(h.store.getState().input, "REFINED ▸ reusable idea");
   assert.equal(inboxThoughts(h.store.getState()).length, 1, "USE 不删除 Thought");
-  h.store.dispatch(act.updateInput("overwritten"));
-  await h.flows.sendThoughtToPrompt(id); // 再次 USE
-  assert.equal(h.store.getState().input, "REFINED ▸ reusable idea");
+  h.store.dispatch(act.updateInput("kept draft"));
+  await h.flows.sendThoughtToPrompt(id); // 再次 USE（追加）
+  assert.equal(
+    h.store.getState().input,
+    "kept draft\n\nREFINED ▸ reusable idea",
+    "重复 USE 追加，不覆盖已有内容"
+  );
   assert.equal(inboxThoughts(h.store.getState()).length, 1);
 });
 

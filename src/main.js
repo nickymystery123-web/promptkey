@@ -23,8 +23,12 @@ function boot() {
 
   // AI: backend API first, local Demo as degraded-mode fallback (PRD Demo First).
   // The flow layer never learns which one answered — same AIService interface.
+  // 3C-3A §5: onMode reports which transport actually answered so the system
+  // bar can show AI · REAL / AI · DEMO (Demo never masquerades as Real).
   const ai = assertAIService(
-    createFallbackAIService(createHttpAIService(), createDemoAIProvider())
+    createFallbackAIService(createHttpAIService(), createDemoAIProvider(), {
+      onMode: (mode) => store.dispatch(act.aiMode(mode))
+    })
   );
   const voice = assertVoiceService(createBrowserSpeechProvider(window));
   const delivery = assertDeliveryService(createClipboardDelivery(navigator, document));
@@ -72,14 +76,44 @@ function boot() {
   });
 
   refs.input.addEventListener("input", () => {
-    store.dispatch(act.updateInput(refs.input.value));
+    // 3C-3A: the caret rides along with every keystroke so UNDO can restore it.
+    store.dispatch(act.updateInput(refs.input.value, {
+      selectionStart: refs.input.selectionStart,
+      selectionEnd: refs.input.selectionEnd
+    }));
   });
   refs.input.addEventListener("keydown", (e) => {
+    // 3C-3A §7.5: application-level undo/redo (the native stack is corrupted
+    // by programmatic writes, so it is fully replaced — always preventDefault).
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+      e.preventDefault();
+      store.dispatch(e.shiftKey ? act.redoInput() : act.undoInput());
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       flows.confirmAndSend();
     }
   });
+
+  // 3C-3A §7.5/§7.6: global shortcut (works when the Composer is not focused),
+  // but never hijacks undo inside other text surfaces (inbox capture, section
+  // or thought editors). Mobile has no keyboard — the ↺/↻ buttons are the
+  // entry point there.
+  function globalUndoRedo(e) {
+    if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== "z") return;
+    const t = e.target;
+    // ANY text surface is skipped: the Composer input has its own keydown
+    // handler (double dispatch here caused TWO undo steps per shortcut —
+    // found in 3C-3A STEP 8 browser E2E), and other surfaces (inbox capture,
+    // section/thought editors) must keep their native undo.
+    if (t && (t.tagName === "TEXTAREA" || t.tagName === "INPUT")) return;
+    e.preventDefault();
+    store.dispatch(e.shiftKey ? act.redoInput() : act.undoInput());
+  }
+  document.addEventListener("keydown", globalUndoRedo);
+  if (refs.undo) refs.undo.addEventListener("click", () => store.dispatch(act.undoInput()));
+  if (refs.redo) refs.redo.addEventListener("click", () => store.dispatch(act.redoInput()));
 
   refs.c1.addEventListener("click", () => flows.improve());
   refs.c2.addEventListener("click", () => flows.rewrite());
@@ -116,6 +150,25 @@ function boot() {
     if (e.key !== "Escape") return;
     // Escape = CANCEL voice (abandon, no AI call). Tap-mic-again = STOP/DONE (finalize).
     flows.cancelVoice();
+  });
+
+  /* ---- 3C-3A §4.4/§6: boot-time restore (best-effort, silent degrade) ----
+     Persisted Creative Inbox thoughts + Composer draft come back exactly as
+     saved: order preserved, no AI, no REFINE, no auto-submit. */
+  (async () => {
+    try {
+      const thoughts = await storage.loadInbox();
+      if (Array.isArray(thoughts) && thoughts.length) store.dispatch(act.inboxRestore(thoughts));
+      const draft = await storage.loadDraft();
+      if (typeof draft === "string" && draft) store.dispatch(act.restoreDraft(draft));
+    } catch (e) { /* storage unavailable — core flows unaffected */ }
+  })();
+
+  /* ---- 3C-3A §6.2: forced final save at page-hide boundaries ----
+     localStorage is synchronous, so the flush is safe to run here. */
+  window.addEventListener("pagehide", () => { flows.flushDraft(); });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flows.flushDraft();
   });
 
   // initial paint
