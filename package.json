@@ -1,0 +1,16 @@
+{
+  "name": "promptkey-float",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "description": "PromptKey Float — persistent floating AI input interface (Phase 3A: backend + AI gateway)",
+  "scripts": {
+    "start": "node server/server.js",
+    "test": "node --test",
+    "build": "node scripts/build.js",
+    "lint": "node scripts/lint.js",
+    "benchmark": "node scripts/benchmark.js",
+    "benchmark:real": "node scripts/benchmark.js --mode real",
+    "benchmark:demo": "node scripts/benchmark.js --mode demo"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "cases": [
+    {
+      "name": "case1-spoken-premium",
+      "input": "帮我把这个页面弄得高级一点。",
+      "inputSource": "voice",
+      "context": null,
+      "mockLLM": {
+        "correctedInput": "帮我把这个页面弄得高级一点。",
+        "corrections": [],
+        "intent": { "task": "ui_design", "object": "这个页面", "goal": ["让页面看起来更高级"], "context": [], "requirements": [], "constraints": [], "preferences": ["高级"], "expectedOutput": "" },
+        "inferredIntent": [],
+        "aiSuggestions": ["可以考虑调整留白与层级"],
+        "uncertainties": [],
+        "optimizedPrompt": "优化这个页面的视觉表现，使其看起来更高级。",
+        "structured": { "role": "", "objective": "优化这个页面的视觉表现，使其看起来更高级", "context": "", "requirements": ["整体视觉更高级"], "style": ["高级"], "output": "" },
+        "fidelity": { "intentFidelity": 0.95, "semanticChanges": [], "addedAssumptions": [], "removedRequirements": [] }
+      },
+      "expect": {
+        "task": "ui_design",
+        "optimizedNotIncludes": ["玻璃", "渐变", "3D", "深色", "glassmorphism", "Apple"],
+        "aiSuggestionsPresent": true,
+        "conservative": false,
+        "fidelityMin": 0.9
+      }
+    },
+    {
+      "name": "case2-repetition-noise",
+      "input": "帮我把这个页面，就是这个页面，整体整体优化一下。",
+      "inputSource": "voice",
+      "context": null,
+      "mockLLM": {
+        "correctedInput": "帮我把这个页面整体优化一下。",
+        "corrections": [],
+        "intent": { "task": "ui_design", "object": "这个页面", "goal": ["整体优化页面"], "context": [], "requirements": [], "constraints": [], "preferences": [], "expectedOutput": "" },
+        "inferredIntent": [],
+        "aiSuggestions": [],
+        "uncertainties": [],
+        "optimizedPrompt": "整体优化这个页面。",
+        "structured": { "role": "", "objective": "整体优化这个页面", "context": "", "requirements": [], "style": [], "output": "" },
+        "fidelity": { "intentFidelity": 0.97, "semanticChanges": [], "addedAssumptions": [], "removedRequirements": [] }
+      },
+      "expect": {
+        "task": "ui_design",
+        "normalizedIncludes": ["整体优化"],
+        "normalizedNotIncludes": ["整体整体"],
+        "conservative": false,
+        "fidelityMin": 0.9
+      }
+    }
+  ]
+}

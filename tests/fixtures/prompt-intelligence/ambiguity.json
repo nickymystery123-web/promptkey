@@ -1,0 +1,48 @@
+{
+  "cases": [
+    {
+      "name": "case5-vague-input-conservative",
+      "input": "这个感觉不太对，你帮我弄得专业一点。",
+      "inputSource": "voice",
+      "context": null,
+      "mockLLM": {
+        "correctedInput": "这个感觉不太对，你帮我弄得专业一点。",
+        "corrections": [],
+        "intent": { "task": "general", "object": "这个", "goal": ["让当前内容更专业"], "context": [], "requirements": [], "constraints": [], "preferences": ["专业"], "expectedOutput": "" },
+        "inferredIntent": [],
+        "aiSuggestions": [],
+        "uncertainties": [{ "type": "ambiguity", "original": "这个", "candidates": [], "confidence": 0.3 }],
+        "optimizedPrompt": "帮我将当前内容调整得更专业。",
+        "structured": { "role": "", "objective": "将当前内容调整得更专业", "context": "", "requirements": [], "style": ["专业"], "output": "" },
+        "fidelity": { "intentFidelity": 0.9, "semanticChanges": [], "addedAssumptions": [], "removedRequirements": [] }
+      },
+      "expect": {
+        "uncertaintyExpected": true,
+        "optimizedNotIncludes": ["Apple", "minimalism", "glassmorphism", "深色", "玻璃拟态"],
+        "fidelityMin": 0.75
+      }
+    },
+    {
+      "name": "case12-constraint-conflict-kept",
+      "input": "尽可能详细，但是控制在100字以内。",
+      "inputSource": "text",
+      "context": null,
+      "mockLLM": {
+        "correctedInput": "尽可能详细，但是控制在100字以内。",
+        "corrections": [],
+        "intent": { "task": "writing", "object": "内容", "goal": ["生成内容"], "context": [], "requirements": ["尽可能详细", "控制在100字以内"], "constraints": ["控制在100字以内"], "preferences": [], "expectedOutput": "" },
+        "inferredIntent": [],
+        "aiSuggestions": [],
+        "uncertainties": [{ "type": "conflict", "original": "尽可能详细 vs 100字以内", "candidates": ["详细优先", "字数优先"], "confidence": 0.6 }],
+        "optimizedPrompt": "在控制在100字以内的前提下，尽可能详细地表达。",
+        "structured": { "role": "", "objective": "在控制在100字以内的前提下，尽可能详细地表达", "context": "", "requirements": ["尽可能详细", "控制在100字以内"], "style": [], "output": "" },
+        "fidelity": { "intentFidelity": 0.94, "semanticChanges": [], "addedAssumptions": [], "removedRequirements": [] }
+      },
+      "expect": {
+        "uncertaintyExpected": true,
+        "optimizedIncludes": ["100字", "详细"],
+        "fidelityMin": 0.9
+      }
+    }
+  ]
+}

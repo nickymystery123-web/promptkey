@@ -1,0 +1,105 @@
+{
+  "cases": [
+    {
+      "id": "H01",
+      "category": "H",
+      "name": "context-simplify-that",
+      "input": "把刚才那个再简洁一点。",
+      "inputSource": "voice",
+      "context": { "currentTask": "设计 PromptKey 首页", "recentInputs": ["做一个高端大气的首页"] },
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["简洁"],
+        "contextTokens": ["首页"],
+        "contextInference": true,
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": ["玻璃", "渐变", "3D", "动画", "Apple"],
+        "constraints": [],
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "fidelityMin": 0.8,
+        "notes": "'刚才那个'必须用 context 解析为首页"
+      }
+    },
+    {
+      "id": "H02",
+      "category": "H",
+      "name": "context-smaller-button",
+      "input": "那个按钮再小一点。",
+      "inputSource": "voice",
+      "context": { "currentTask": "设计 PromptKey 首页", "recentInputs": ["做一个高端大气的首页"] },
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["按钮", "小"],
+        "contextTokens": ["首页"],
+        "contextInference": true,
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "'那个按钮'指首页中的按钮"
+      }
+    },
+    {
+      "id": "H03",
+      "category": "H",
+      "name": "context-change-feel",
+      "input": "这个地方换一种感觉。",
+      "inputSource": "voice",
+      "context": { "currentTask": "设计 PromptKey 首页", "recentInputs": ["做一个高端大气的首页"] },
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["换", "感觉"],
+        "contextTokens": ["首页"],
+        "contextInference": true,
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "'这个地方'指当前任务页面"
+      }
+    },
+    {
+      "id": "H04",
+      "category": "H",
+      "name": "context-more-premium",
+      "input": "再高级一点。",
+      "inputSource": "voice",
+      "context": { "currentTask": "设计 PromptKey 首页", "recentInputs": ["做一个高端大气的首页"] },
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["高级"],
+        "contextTokens": ["首页"],
+        "contextInference": true,
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": ["玻璃", "渐变", "3D", "动画", "Apple"],
+        "constraints": [],
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "'再'承接当前任务继续提升"
+      }
+    },
+    {
+      "id": "H05",
+      "category": "H",
+      "name": "context-continue",
+      "input": "继续优化。",
+      "inputSource": "voice",
+      "context": { "currentTask": "设计 PromptKey 首页", "recentInputs": ["做一个高端大气的首页"] },
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["优化"],
+        "contextTokens": ["首页"],
+        "contextInference": true,
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "'继续'承接当前任务"
+      }
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "cases": [
+    {
+      "id": "D01",
+      "category": "D",
+      "name": "term-sequel-movie",
+      "input": "这个电影的 sequel 写得不错。",
+      "inputSource": "text",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["sequel"],
+        "terminology": { "correctCorrections": [], "falseCorrections": [{ "from": "sequel", "to": "SQL" }], "preserveTerms": [] },
+        "forbiddenInferences": ["SQL", "查询", "数据库"],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": true,
+        "conservativeAllowed": true,
+        "notes": "电影语境：sequel 是续集，不得改成 SQL（False Correction 高危）"
+      }
+    },
+    {
+      "id": "D02",
+      "category": "D",
+      "name": "term-sql-keep",
+      "input": "帮我写一个 SQL 查询。",
+      "inputSource": "text",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["SQL"],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": ["SQL"] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "已是规范术语，必须原样保留"
+      }
+    },
+    {
+      "id": "D03",
+      "category": "D",
+      "name": "term-react-keep",
+      "input": "帮我用 React 重构这个页面。",
+      "inputSource": "text",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["React", "页面"],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": ["React"] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "React 专有名词原样保留"
+      }
+    },
+    {
+      "id": "D04",
+      "category": "D",
+      "name": "term-deepseek-keep",
+      "input": "帮我接 DeepSeek API。",
+      "inputSource": "text",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["DeepSeek", "API"],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": ["DeepSeek", "API"] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "品牌与缩略词原样保留"
+      }
+    },
+    {
+      "id": "D05",
+      "category": "D",
+      "name": "term-json-keep",
+      "input": "帮我分析这个 JSON 文件。",
+      "inputSource": "text",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["JSON"],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": ["JSON"] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "JSON 原样保留"
+      }
+    }
+  ]
+}

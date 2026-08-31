@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PromptKey — Think naturally. Prompt precisely.</title>
+<meta name="description" content="PromptKey Float — a persistent floating AI input interface. Transform natural thoughts into structured prompts.">
+<link rel="stylesheet" href="css/float.css">
+</head>
+<body>
+
+<!-- ===================== Landing Page ===================== -->
+<header class="site-nav">
+  <div class="nav-inner">
+    <span class="nav-brand">PROMPTKEY</span>
+    <button class="pk-try nav-try" type="button">TRY PROMPTKEY</button>
+  </div>
+</header>
+
+<main class="site-main">
+  <section class="site-hero">
+    <p class="hero-kicker">PERSISTENT FLOATING AI INPUT INTERFACE</p>
+    <h1>Think naturally.<br>Prompt precisely.</h1>
+    <p class="hero-sub">Transform your thoughts into structured, professional AI instructions — by speaking naturally. AI starts before you press Send.</p>
+    <button class="pk-try hero-try" type="button">TRY PROMPTKEY</button>
+    <p class="hero-hint">No sign-up. No download. Works on desktop and mobile.</p>
+  </section>
+
+  <section class="site-flow">
+    <div class="flow-step"><span class="flow-num">01</span><h3>Think</h3><p>An idea forms naturally</p></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><span class="flow-num">02</span><h3>Speak</h3><p>Express in your own words</p></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><span class="flow-num">03</span><h3>Understand</h3><p>PromptKey interprets intent</p></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><span class="flow-num">04</span><h3>Send</h3><p>Confirmed by you</p></div>
+  </section>
+
+  <section class="site-controls">
+    <h2>One workspace. One pipeline.</h2>
+    <div class="ctrl-grid">
+      <div class="ctrl-card"><h4>Composer</h4><p>Type or speak. Edit freely — nothing is captured until you refine.</p></div>
+      <div class="ctrl-card"><h4>Refine</h4><p>Send your thought through AI. The structured result lands in your Creative Inbox.</p></div>
+      <div class="ctrl-card"><h4>Creative Inbox</h4><p>Edit, delete, or USE any refined idea later.</p></div>
+      <div class="ctrl-card"><h4>Custom Actions</h4><p>C1 Improve · C2 Rewrite. One tap, instant result.</p></div>
+      <div class="ctrl-card"><h4>Voice Input</h4><p>Speak naturally. PromptKey structures the rest.</p></div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <p>PromptKey Float · Online experience · <a href="https://6ybw4qbq7s.coze.site/" target="_blank" rel="noopener">Meet the physical PromptKey →</a></p>
+  </footer>
+</main>
+
+<!-- ===================== PromptKey Float ===================== -->
+<div id="pk-float" data-window="hidden" data-status="idle" aria-hidden="true">
+  <!-- Layer 01 · System Bar -->
+  <div class="pk-system-bar" id="pk-drag-handle">
+    <span class="pk-status" id="pk-status"><span class="pk-status-dot" id="pk-status-dot"></span><span class="pk-status-label" id="pk-status-label" aria-live="polite">READY</span></span>
+    <span class="pk-identity">PROMPTKEY FLOAT</span>
+    <span class="pk-win-btns">
+      <button class="pk-win-btn" id="pk-min-btn" type="button" aria-label="Minimize">—</button>
+      <button class="pk-win-btn" id="pk-close-btn" type="button" aria-label="Close">×</button>
+    </span>
+  </div>
+
+  <!-- Layer 02 · Prompt Workspace -->
+  <div class="pk-workspace" id="pk-workspace">
+
+    <!-- Creative Inbox (3C-2B): always on top, above the Composer. Capture
+         first, then REFINE into the inbox. ADD places text into the Composer. -->
+    <div class="pk-inbox" id="pk-inbox" data-count="0">
+      <div class="pk-inbox-head">
+        <button class="pk-inbox-toggle" id="pk-inbox-toggle" type="button" aria-expanded="false" aria-controls="pk-inbox-body">
+          <span class="pk-inbox-caret" aria-hidden="true">▸</span>
+          <span class="pk-inbox-title">CREATIVE INBOX</span>
+          <span class="pk-inbox-count" id="pk-inbox-count" hidden></span>
+        </button>
+        <button class="pk-inbox-clear" id="pk-inbox-clear" type="button" hidden>CLEAR ALL</button>
+      </div>
+
+      <div class="pk-inbox-body" id="pk-inbox-body" hidden>
+        <div class="pk-inbox-capture">
+          <textarea id="pk-inbox-draft" class="pk-inbox-draft" rows="1" maxlength="2000"
+            placeholder="Capture an idea — type here. ADD places it in your prompt; REFINE saves it to the inbox."></textarea>
+          <button class="pk-inbox-add" id="pk-inbox-add" type="button" aria-label="Add to prompt">ADD</button>
+        </div>
+        <div class="pk-inbox-list" id="pk-inbox-list" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <div class="pk-view pk-view-idle" data-view="idle" id="pk-view-idle">
+      <p class="pk-idle-q">What would you like<br>to create?</p>
+      <p class="pk-idle-hint">Tell me what's on your mind...</p>
+      <p class="pk-idle-meta">THOUGHT INPUT</p>
+      <p class="pk-cursor-line">CURSOR <span class="pk-caret">▍</span></p>
+    </div>
+
+    <div class="pk-view pk-view-input" data-view="input">
+      <p class="pk-view-label" id="pk-input-label">YOUR THOUGHT</p>
+      <textarea id="pk-input" class="pk-input-area" maxlength="2000"
+        placeholder="Type your thought here..." aria-label="Thought input"></textarea>
+      <div class="pk-transcript" id="pk-transcript" hidden>
+        <p class="pk-transcript-head">
+          <span class="pk-transcript-label" id="pk-transcript-label">LISTENING</span>
+          <button class="pk-transcript-cancel" id="pk-voice-cancel" type="button" aria-label="Cancel voice input">CANCEL ✕</button>
+        </p>
+        <p class="pk-transcript-text" id="pk-transcript-text" aria-live="polite"></p>
+      </div>
+      <!-- Composer submit entry (3C-2B): the ONLY explicit final-send surface,
+           living inside the Composer. Distinct from VOICE/REFINE (bottom bar)
+           and USE (inbox). -->
+      <button class="pk-submit" id="pk-submit" type="button" aria-label="Submit prompt">
+        <span class="pk-submit-arrow" aria-hidden="true">→</span>
+        <span class="pk-submit-text">SUBMIT</span>
+      </button>
+      <p class="pk-cursor-line">CURSOR <span class="pk-caret">▍</span></p>
+    </div>
+
+    <div class="pk-view pk-view-understanding" data-view="understanding">
+      <ul class="pk-understand-list" id="pk-understand-list">
+        <li data-line="0">Reading your thought <span class="pk-mark"></span></li>
+        <li data-line="1">Identifying your goal <span class="pk-mark"></span></li>
+        <li data-line="2">Finding key context <span class="pk-mark"></span></li>
+      </ul>
+    </div>
+
+    <div class="pk-view pk-view-structured" data-view="structured">
+      <p class="pk-view-label">AI STRUCTURED PROMPT</p>
+      <div class="pk-reviewbar" id="pk-reviewbar" hidden>
+        <p class="pk-yousaid"><span class="pk-yousaid-label">YOU SAID</span>
+          <span class="pk-yousaid-text" id="pk-yousaid-text"></span></p>
+        <div class="pk-choice" role="group" aria-label="Choose which version to send">
+          <button class="pk-choice-btn" id="pk-use-original" type="button" aria-pressed="false">USE ORIGINAL</button>
+          <button class="pk-choice-btn" id="pk-use-optimized" type="button" aria-pressed="true">USE OPTIMIZED</button>
+        </div>
+      </div>
+      <div class="pk-sections" id="pk-sections"></div>
+    </div>
+
+    <div class="pk-view pk-view-delivered" data-view="delivered">
+      <p class="pk-delivered-title">✦ DELIVERED</p>
+      <p class="pk-delivered-sub">Your prompt is ready.</p>
+      <p class="pk-delivered-actions">
+        <button class="pk-text-action" id="pk-copy-btn" type="button">Copy Prompt</button>
+        <span class="pk-dot-sep">·</span>
+        <button class="pk-text-action" id="pk-new-btn" type="button">New Thought</button>
+      </p>
+    </div>
+
+    <p class="pk-workspace-msg" id="pk-workspace-msg" aria-live="polite"></p>
+  </div>
+
+  <!-- Layer 03 · Physical Controls (3C-2B: bottom bar = VOICE / REFINE only;
+       the explicit SEND/CONFIRM entry lives inside the Composer as #pk-submit) -->
+  <div class="pk-controls" id="pk-controls">
+    <div class="pk-ctrl-mid">
+      <div class="pk-custom-btns">
+        <button class="pk-custom-btn" id="pk-c1" type="button" aria-label="Improve prompt" data-tip="IMPROVE">C1</button>
+        <button class="pk-custom-btn" id="pk-c2" type="button" aria-label="Rewrite prompt" data-tip="REWRITE">C2</button>
+      </div>
+      <span class="pk-ctrl-caption">C1&nbsp;&nbsp;&nbsp;C2</span>
+    </div>
+
+    <div class="pk-ctrl-right">
+      <button class="pk-refine" id="pk-refine" type="button" aria-label="Refine prompt to Creative Inbox" data-tip="REFINE → INBOX">
+        <span class="pk-refine-icon" aria-hidden="true">✦</span>
+        <span class="pk-refine-text">REFINE</span>
+      </button>
+      <button class="pk-voice" id="pk-voice" type="button" aria-label="Voice input" data-tip="Tap to speak">
+        <span class="pk-voice-ring"></span>
+        <span class="pk-voice-icon" aria-hidden="true">◉</span>
+      </button>
+      <span class="pk-ctrl-caption" id="pk-voice-caption">VOICE</span>
+    </div>
+  </div>
+
+  <div class="pk-brand-foot">PROMPTKEY</div>
+</div>
+
+<!-- Minimized bubble -->
+<button id="pk-minimized" type="button" aria-label="Restore PromptKey" hidden>
+  <span class="pk-min-dot"></span>
+  <span class="pk-min-pk">PK</span>
+  <span class="pk-min-tip">PROMPTKEY · Ready</span>
+</button>
+
+<!-- Corner launcher pill (after close) -->
+<button id="pk-pill" type="button" hidden>
+  <span class="pk-pill-dot"></span> PROMPTKEY
+</button>
+
+<!-- Toast -->
+<div id="pk-toast" role="status" aria-live="polite"></div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

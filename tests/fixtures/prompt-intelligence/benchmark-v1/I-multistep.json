@@ -1,0 +1,110 @@
+{
+  "cases": [
+    {
+      "id": "I01",
+      "category": "I",
+      "name": "multi-analyze-then-report",
+      "input": "先帮我分析一下这个数据，然后根据分析结果做一个汇报。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "multi_step",
+        "taskType": "multi_step",
+        "subtasksMin": 2,
+        "intentTokens": ["分析", "汇报"],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "fidelityMin": 0.8,
+        "notes": "两步任务：分析 → 汇报，全部保留"
+      }
+    },
+    {
+      "id": "I02",
+      "category": "I",
+      "name": "multi-analyze-then-plan",
+      "input": "帮我先把这个页面分析一下，然后给我一个优化方案。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "multi_step",
+        "taskType": "multi_step",
+        "subtasksMin": 2,
+        "intentTokens": ["分析", "方案"],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "两步：分析 → 给方案"
+      }
+    },
+    {
+      "id": "I03",
+      "category": "I",
+      "name": "multi-prd-then-page",
+      "input": "帮我写一下 PRD，然后再根据 PRD 做一个页面。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "multi_step",
+        "taskType": "multi_step",
+        "subtasksMin": 2,
+        "intentTokens": ["PRD", "页面"],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": ["PRD"] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "两步：写 PRD → 做页面"
+      }
+    },
+    {
+      "id": "I04",
+      "category": "I",
+      "name": "multi-translate-then-polish",
+      "input": "先翻译成英文，再帮我润色一下。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "multi_step",
+        "taskType": "multi_step",
+        "subtasksMin": 2,
+        "intentTokens": ["翻译", "润色"],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "两步：翻译 → 润色"
+      }
+    },
+    {
+      "id": "I05",
+      "category": "I",
+      "name": "multi-sql-fix",
+      "input": "帮我分析这个 SQL，然后告诉我哪里有问题，再给我修改后的版本。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "multi_step",
+        "taskType": "multi_step",
+        "subtasksMin": 3,
+        "intentTokens": ["SQL", "问题", "修改"],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": ["SQL"] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "三步：分析 → 找问题 → 改版本"
+      }
+    }
+  ]
+}

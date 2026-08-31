@@ -1,0 +1,50 @@
+{
+  "cases": [
+    {
+      "name": "case4-sequel-to-sql",
+      "input": "帮我用 sequel 查一下这个数据。",
+      "inputSource": "voice",
+      "context": null,
+      "mockLLM": {
+        "correctedInput": "帮我用 SQL 查一下这个数据。",
+        "corrections": [{ "original": "sequel", "corrected": "SQL", "confidence": 0.9, "reason": "ASR homophone with data context" }],
+        "intent": { "task": "data_analysis", "object": "这个数据", "goal": ["用 SQL 查询数据"], "context": [], "requirements": [], "constraints": [], "preferences": [], "expectedOutput": "SQL 查询语句" },
+        "inferredIntent": [],
+        "aiSuggestions": [],
+        "uncertainties": [],
+        "optimizedPrompt": "帮我用 SQL 查询这个数据。",
+        "structured": { "role": "", "objective": "用 SQL 查询这个数据", "context": "", "requirements": [], "style": [], "output": "SQL 查询语句" },
+        "fidelity": { "intentFidelity": 0.93, "semanticChanges": [], "addedAssumptions": [], "removedRequirements": [] }
+      },
+      "expect": {
+        "task": "data_analysis",
+        "optimizedIncludes": ["SQL"],
+        "correctionFor": { "original": "sequel", "corrected": "SQL" },
+        "fidelityMin": 0.9
+      }
+    },
+    {
+      "name": "case10-react-api-tech-preservation",
+      "input": "帮我检查一下这个 React 页面为什么 API 调不通。",
+      "inputSource": "text",
+      "context": null,
+      "mockLLM": {
+        "correctedInput": "帮我检查一下这个 React 页面为什么 API 调不通。",
+        "corrections": [],
+        "intent": { "task": "debugging", "object": "React 页面的 API 调用", "goal": ["定位 React 页面 API 调不通的原因"], "context": [], "requirements": ["给出排查步骤"], "constraints": [], "preferences": [], "expectedOutput": "问题定位与修复建议" },
+        "inferredIntent": [],
+        "aiSuggestions": ["检查网络面板与跨域配置"],
+        "uncertainties": [],
+        "optimizedPrompt": "帮我检查这个 React 页面的 API 为什么调不通，给出排查步骤。",
+        "structured": { "role": "", "objective": "检查 React 页面 API 调不通的原因并给出排查步骤", "context": "", "requirements": ["给出排查步骤"], "style": [], "output": "问题定位与修复建议" },
+        "fidelity": { "intentFidelity": 0.97, "semanticChanges": [], "addedAssumptions": [], "removedRequirements": [] }
+      },
+      "expect": {
+        "task": "debugging",
+        "optimizedIncludes": ["React", "API"],
+        "optimizedNotIncludes": ["Vue", "OpenAI"],
+        "fidelityMin": 0.9
+      }
+    }
+  ]
+}

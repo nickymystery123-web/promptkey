@@ -1,0 +1,104 @@
+{
+  "cases": [
+    {
+      "id": "F01",
+      "category": "F",
+      "name": "anti-oi-button",
+      "input": "帮我把按钮做得高级一点。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "ui_design",
+        "taskType": "single",
+        "intentTokens": ["按钮", ["高级", "质感"]],
+        "forbiddenInferences": ["玻璃", "渐变", "3D", "动画", "Apple", "苹果", "微交互", "阴影"],
+        "constraints": [],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "不得自动加 glassmorphism/gradient/3D/animation/Apple 风格"
+      }
+    },
+    {
+      "id": "F02",
+      "category": "F",
+      "name": "anti-oi-homepage",
+      "input": "帮我把首页优化一下。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "ui_design",
+        "taskType": "single",
+        "intentTokens": ["首页", "优化"],
+        "forbiddenInferences": ["Apple", "苹果", "暗色", "极简", "北欧", "玻璃", "渐变"],
+        "constraints": [],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "不得默认假设 Apple 风格"
+      }
+    },
+    {
+      "id": "F03",
+      "category": "F",
+      "name": "anti-oi-ppt",
+      "input": "帮我把这个 PPT 做得专业一点。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "presentation",
+        "taskType": "single",
+        "intentTokens": ["PPT", "专业"],
+        "forbiddenInferences": ["20 页", "20页", "商务蓝", "16:9", "16 比 9", "医疗", "金融", "科技行业", "医药"],
+        "constraints": [],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "不得假设页数/配色/比例/行业"
+      }
+    },
+    {
+      "id": "F04",
+      "category": "F",
+      "name": "anti-oi-data-analysis",
+      "input": "帮我把这个数据分析一下。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "data_analysis",
+        "taskType": "single",
+        "intentTokens": ["数据", "分析"],
+        "forbiddenInferences": ["Python", "pandas", "matplotlib", "SQL", "Excel"],
+        "constraints": [],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "不得假设技术栈 Python/pandas/matplotlib/SQL"
+      }
+    },
+    {
+      "id": "F05",
+      "category": "F",
+      "name": "anti-oi-product-intro",
+      "input": "帮我写一个产品介绍。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "writing",
+        "taskType": "single",
+        "intentTokens": ["产品", "介绍"],
+        "forbiddenInferences": ["SaaS", "AI 公司", "创业公司", "startup", "融资", "目标受众", "目标用户", "面向"],
+        "constraints": [],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "不得假设产品类型/公司背景/目标受众"
+      }
+    }
+  ]
+}

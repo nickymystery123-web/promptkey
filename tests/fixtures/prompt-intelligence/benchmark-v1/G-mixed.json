@@ -1,0 +1,102 @@
+{
+  "cases": [
+    {
+      "id": "G01",
+      "category": "G",
+      "name": "mixed-ui-redesign-minimal",
+      "input": "帮我把这个 UI redesign 一下，但是整体还是要 minimal。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "ui_design",
+        "taskType": "single",
+        "intentTokens": ["UI", ["redesign", "重新设计"], ["minimal", "极简", "简洁"]],
+        "constraints": [ { "label": "保持 minimal", "groups": [["minimal", "极简", "简洁", "保持"] ] } ],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": ["UI"] },
+        "forbiddenInferences": ["玻璃", "渐变", "3D", "动画", "Apple", "苹果"],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "中英混排，保留 UI/minimal 原词或语义等价物"
+      }
+    },
+    {
+      "id": "G02",
+      "category": "G",
+      "name": "mixed-landing-premium",
+      "input": "帮我把这个 landing page 做得更 premium 一点。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "ui_design",
+        "taskType": "single",
+        "intentTokens": ["landing", ["premium", "高级", "奢华"]],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": ["玻璃", "渐变", "3D", "动画", "Apple", "苹果"],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "landing page / premium 双语保留"
+      }
+    },
+    {
+      "id": "G03",
+      "category": "G",
+      "name": "mixed-interaction-simplify",
+      "input": "这个 interaction 有点复杂，帮我 simplify 一下。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["interaction", ["simplify", "简化"]],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "interaction/simplify 双语保留"
+      }
+    },
+    {
+      "id": "G04",
+      "category": "G",
+      "name": "mixed-optimize-api",
+      "input": "帮我 optimize 一下这个 API。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": [["optimize", "优化"], "API"],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": ["API"] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "optimize/API 保留"
+      }
+    },
+    {
+      "id": "G05",
+      "category": "G",
+      "name": "mixed-prompt-rewrite-professional",
+      "input": "这个 prompt 帮我 rewrite 得更 professional 一点。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "rewriting",
+        "taskType": "single",
+        "intentTokens": ["prompt", ["rewrite", "重写"], ["professional", "专业"]],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": ["prompt"] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "prompt/rewrite/professional 双语保留"
+      }
+    }
+  ]
+}

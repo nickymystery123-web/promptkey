@@ -1,0 +1,27 @@
+{
+  "cases": [
+    {
+      "name": "case11-multi-task-both-kept",
+      "input": "先帮我分析一下这个数据，然后根据分析结果帮我写一个汇报。",
+      "inputSource": "voice",
+      "context": null,
+      "mockLLM": {
+        "correctedInput": "先帮我分析一下这个数据，然后根据分析结果帮我写一个汇报。",
+        "corrections": [],
+        "intent": { "task": "multi_step", "object": "这个数据", "goal": ["分析这个数据", "根据分析结果写一个汇报"], "context": [], "requirements": [], "constraints": [], "preferences": [], "expectedOutput": "数据分析 + 汇报文档", "subtasks": ["data_analysis", "report_generation"] },
+        "inferredIntent": [],
+        "aiSuggestions": [],
+        "uncertainties": [],
+        "optimizedPrompt": "先分析这个数据，然后根据分析结果写一个汇报。",
+        "structured": { "role": "", "objective": "先分析这个数据，然后根据分析结果写一个汇报", "context": "", "requirements": [], "style": [], "output": "数据分析 + 汇报文档" },
+        "fidelity": { "intentFidelity": 0.96, "semanticChanges": [], "addedAssumptions": [], "removedRequirements": [] }
+      },
+      "expect": {
+        "task": "multi_step",
+        "subtasks": ["data_analysis", "report_generation"],
+        "optimizedIncludes": ["分析", "汇报"],
+        "fidelityMin": 0.9
+      }
+    }
+  ]
+}

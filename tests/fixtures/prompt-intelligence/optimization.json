@@ -1,0 +1,50 @@
+{
+  "cases": [
+    {
+      "name": "case23-translation-no-role-inflation",
+      "input": "帮我把这段话翻译成英文。",
+      "inputSource": "text",
+      "context": null,
+      "mockLLM": {
+        "correctedInput": "帮我把这段话翻译成英文。",
+        "corrections": [],
+        "intent": { "task": "translation", "object": "这段话", "goal": ["把这段话翻译成英文"], "context": [], "requirements": ["保留原意", "不增加原文没有的信息"], "constraints": [], "preferences": [], "expectedOutput": "英文译文" },
+        "inferredIntent": [],
+        "aiSuggestions": [],
+        "uncertainties": [],
+        "optimizedPrompt": "将以下内容翻译成自然、准确、符合英文母语表达习惯的英文。保留原意，不增加原文没有的信息。",
+        "structured": { "role": "", "objective": "将以下内容翻译成自然、准确、符合英文母语表达习惯的英文", "context": "", "requirements": ["保留原意", "不增加原文没有的信息"], "style": [], "output": "英文译文" },
+        "fidelity": { "intentFidelity": 0.97, "semanticChanges": [], "addedAssumptions": [], "removedRequirements": [] }
+      },
+      "expect": {
+        "task": "translation",
+        "roleIsEmpty": true,
+        "optimizedNotIncludes": ["world-class", "expert", "专家", "资深"],
+        "fidelityMin": 0.9
+      }
+    },
+    {
+      "name": "case24-clear-input-no-balloon",
+      "input": "帮我写一个 Python 函数，计算两个数字的平均值。",
+      "inputSource": "text",
+      "context": null,
+      "mockLLM": {
+        "correctedInput": "帮我写一个 Python 函数，计算两个数字的平均值。",
+        "corrections": [],
+        "intent": { "task": "coding", "object": "Python 函数", "goal": ["写一个计算两个数字平均值的 Python 函数"], "context": [], "requirements": [], "constraints": [], "preferences": [], "expectedOutput": "Python 函数代码" },
+        "inferredIntent": [],
+        "aiSuggestions": [],
+        "uncertainties": [],
+        "optimizedPrompt": "写一个 Python 函数，计算两个数字的平均值。",
+        "structured": { "role": "", "objective": "写一个 Python 函数，计算两个数字的平均值", "context": "", "requirements": [], "style": [], "output": "Python 函数代码" },
+        "fidelity": { "intentFidelity": 0.99, "semanticChanges": [], "addedAssumptions": [], "removedRequirements": [] }
+      },
+      "expect": {
+        "task": "coding",
+        "optimizedIncludes": ["Python", "平均值"],
+        "optimizedMaxLength": 200,
+        "fidelityMin": 0.9
+      }
+    }
+  ]
+}

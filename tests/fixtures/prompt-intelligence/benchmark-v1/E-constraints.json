@@ -1,0 +1,113 @@
+{
+  "cases": [
+    {
+      "id": "E01",
+      "category": "E",
+      "name": "constraint-keep-features",
+      "input": "重新设计首页，但是不要改现有功能。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["首页"],
+        "constraints": [
+          { "label": "不改变现有功能", "groups": [["不要", "别", "不能", "不得", "不改", "保持", "保留", "维持", "不动"], ["现有功能"]] }
+        ],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "fidelityMin": 0.8,
+        "notes": "双约束：重新设计 + 不改现有功能（最高优先级）"
+      }
+    },
+    {
+      "id": "E02",
+      "category": "E",
+      "name": "constraint-no-new-pages",
+      "input": "帮我优化这个页面，但是不要增加新的页面。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["页面"],
+        "constraints": [
+          { "label": "不增加新页面", "groups": [["不要", "别", "不能", "不得", "不加", "不新增", "不增加"], ["新页面", "新的页面", "新增页面"]] }
+        ],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "不要增加新的页面"
+      }
+    },
+    {
+      "id": "E03",
+      "category": "E",
+      "name": "constraint-keep-meaning",
+      "input": "帮我写得专业一点，但是不要改变原来的意思。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["专业"],
+        "constraints": [
+          { "label": "不改变原意", "groups": [["不要", "别", "不能", "不得", "不改", "保持", "保留", "维持"], ["原来的意思", "原意", "本意", "意思不变"]] }
+        ],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "fidelityMin": 0.8,
+        "notes": "专业 + 不改原意"
+      }
+    },
+    {
+      "id": "E04",
+      "category": "E",
+      "name": "constraint-no-fabrication",
+      "input": "帮我分析数据，不要自己编数据。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "data_analysis",
+        "taskType": "single",
+        "intentTokens": ["数据", "分析"],
+        "constraints": [
+          { "label": "不编造数据", "groups": [["不要", "别", "不能", "不得", "不", "严禁", "禁止"], ["编数据", "编造", "虚构", "瞎编", "造假"]] }
+        ],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "fidelityMin": 0.8,
+        "notes": "分析真实数据，禁止编造"
+      }
+    },
+    {
+      "id": "E05",
+      "category": "E",
+      "name": "constraint-not-flashy",
+      "input": "做得高级一点，但是不要太花哨。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["高级"],
+        "constraints": [
+          { "label": "不要太花哨", "groups": [["不要", "别", "不能", "不得", "避免", "不", "适度"], ["花哨"]] }
+        ],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": ["渐变", "3D", "动画", "玻璃"],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "高级但克制，不得往花哨方向脑补"
+      }
+    }
+  ]
+}

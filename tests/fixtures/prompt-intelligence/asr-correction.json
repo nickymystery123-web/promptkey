@@ -1,0 +1,29 @@
+{
+  "cases": [
+    {
+      "name": "case3-asr-deepseek",
+      "input": "帮我接一下 deep seek 的 API。",
+      "inputSource": "voice",
+      "context": null,
+      "mockLLM": {
+        "correctedInput": "帮我接一下 DeepSeek 的 API。",
+        "corrections": [{ "original": "deep seek", "corrected": "DeepSeek", "confidence": 0.98, "reason": "contextual terminology match" }],
+        "intent": { "task": "coding", "object": "DeepSeek API", "goal": ["接入 DeepSeek API"], "context": [], "requirements": [], "constraints": [], "preferences": [], "expectedOutput": "可用的 API 接入代码" },
+        "inferredIntent": [],
+        "aiSuggestions": [],
+        "uncertainties": [],
+        "optimizedPrompt": "帮我接入 DeepSeek 的 API。",
+        "structured": { "role": "", "objective": "接入 DeepSeek 的 API", "context": "", "requirements": [], "style": [], "output": "可用的 API 接入代码" },
+        "fidelity": { "intentFidelity": 0.97, "semanticChanges": [], "addedAssumptions": [], "removedRequirements": [] }
+      },
+      "expect": {
+        "task": "coding",
+        "correctedIncludes": ["DeepSeek"],
+        "optimizedIncludes": ["DeepSeek", "API"],
+        "optimizedNotIncludes": ["deep seek"],
+        "correctionFor": { "original": "deep seek", "corrected": "DeepSeek" },
+        "fidelityMin": 0.9
+      }
+    }
+  ]
+}

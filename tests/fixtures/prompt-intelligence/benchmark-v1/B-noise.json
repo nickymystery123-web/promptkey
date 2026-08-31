@@ -1,0 +1,191 @@
+{
+  "cases": [
+    {
+      "id": "B01",
+      "category": "B",
+      "name": "noise-repetitive-filler",
+      "input": "就是我想让这个页面，就是整体看起来高级一点。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "ui_design",
+        "taskType": "single",
+        "intentTokens": [
+          "页面",
+          [
+            "高级",
+            "更高端"
+          ]
+        ],
+        "forbiddenInferences": [
+          "玻璃",
+          "渐变",
+          "3D",
+          "动画",
+          "Apple",
+          "苹果"
+        ],
+        "noiseRemoved": [
+          "就是我想"
+        ],
+        "correctedNotIncludes": [
+          "整体整体"
+        ],
+        "constraints": [],
+        "terminology": {
+          "correctCorrections": [],
+          "falseCorrections": [],
+          "preserveTerms": []
+        },
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "去除重复与口头禅，保留语义"
+      }
+    },
+    {
+      "id": "B02",
+      "category": "B",
+      "name": "noise-repeated-segment",
+      "input": "帮我把这个，就是这个页面，整体整体优化一下。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "ui_design",
+        "taskType": "single",
+        "intentTokens": [
+          "页面",
+          "优化"
+        ],
+        "forbiddenInferences": [
+          "玻璃",
+          "渐变",
+          "3D",
+          "动画"
+        ],
+        "noiseRemoved": [
+          "就是这个页面"
+        ],
+        "correctedNotIncludes": [
+          "整体整体"
+        ],
+        "constraints": [],
+        "terminology": {
+          "correctCorrections": [],
+          "falseCorrections": [],
+          "preserveTerms": []
+        },
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "去重，语义不变"
+      }
+    },
+    {
+      "id": "B03",
+      "category": "B",
+      "name": "noise-filler-clause",
+      "input": "我想让它，就是说，看起来不要那么乱。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": [
+          "乱"
+        ],
+        "noiseRemoved": [
+          "就是说"
+        ],
+        "constraints": [
+          {
+            "label": "不要乱",
+            "groups": [
+              [
+                "不要",
+                "别",
+                "不能",
+                "不"
+              ],
+              [
+                "乱"
+              ]
+            ]
+          }
+        ],
+        "terminology": {
+          "correctCorrections": [],
+          "falseCorrections": [],
+          "preserveTerms": []
+        },
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "噪声去除且保留'不乱'约束",
+        "forbiddenInferences": []
+      }
+    },
+    {
+      "id": "B04",
+      "category": "B",
+      "name": "noise-stammer",
+      "input": "这个你帮我稍微，就是稍微优化一下吧。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": [
+          "优化"
+        ],
+        "noiseRemoved": [
+          "就是"
+        ],
+        "correctedNotIncludes": [
+          "就是"
+        ],
+        "constraints": [],
+        "terminology": {
+          "correctCorrections": [],
+          "falseCorrections": [],
+          "preserveTerms": []
+        },
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "保留'稍微'程度，去掉结巴",
+        "forbiddenInferences": []
+      }
+    },
+    {
+      "id": "B05",
+      "category": "B",
+      "name": "noise-hesitation",
+      "input": "就是我觉得这个地方吧，嗯，有点不太对。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": [
+          "不太对",
+          "地方"
+        ],
+        "noiseRemoved": [
+          "嗯"
+        ],
+        "correctedNotIncludes": [
+          "嗯"
+        ],
+        "constraints": [],
+        "terminology": {
+          "correctCorrections": [],
+          "falseCorrections": [],
+          "preserveTerms": []
+        },
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "去掉犹豫词，保留'有问题'的语义",
+        "forbiddenInferences": []
+      }
+    }
+  ]
+}

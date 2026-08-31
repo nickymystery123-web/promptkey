@@ -1,0 +1,28 @@
+{
+  "cases": [
+    {
+      "name": "case6-context-reference-resolution",
+      "input": "把刚才那个再简洁一点。",
+      "inputSource": "text",
+      "context": { "currentTask": "我们正在设计 PromptKey 首页。", "recentInputs": ["帮我设计 PromptKey 首页"] },
+      "mockLLM": {
+        "correctedInput": "把 PromptKey 首页设计再简洁一点。",
+        "corrections": [],
+        "intent": { "task": "ui_design", "object": "PromptKey 首页", "goal": ["让 PromptKey 首页更简洁"], "context": ["我们正在设计 PromptKey 首页"], "requirements": [], "constraints": [], "preferences": ["简洁"], "expectedOutput": "" },
+        "inferredIntent": [],
+        "aiSuggestions": [],
+        "uncertainties": [],
+        "optimizedPrompt": "将 PromptKey 首页设计得更简洁。",
+        "structured": { "role": "", "objective": "将 PromptKey 首页设计得更简洁", "context": "我们正在设计 PromptKey 首页", "requirements": [], "style": ["简洁"], "output": "" },
+        "fidelity": { "intentFidelity": 0.95, "semanticChanges": [], "addedAssumptions": [], "removedRequirements": [] }
+      },
+      "expect": {
+        "task": "ui_design",
+        "correctedIncludes": ["PromptKey"],
+        "optimizedIncludes": ["简洁"],
+        "intentContextIncludes": ["PromptKey"],
+        "fidelityMin": 0.9
+      }
+    }
+  ]
+}

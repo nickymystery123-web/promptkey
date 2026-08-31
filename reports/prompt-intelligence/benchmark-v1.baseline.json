@@ -1,0 +1,2247 @@
+{
+  "report": "PromptKey Intelligence Benchmark v1",
+  "generatedAt": "2026-08-31T08:08:25.187Z",
+  "skillVersion": "1.0",
+  "mode": "real",
+  "model": "deepseek-chat",
+  "cases": 50,
+  "dimScores": {
+    "fidelity": 0.886,
+    "terminology": 0.98,
+    "constraints": 1,
+    "executability": 0.909,
+    "antiOI": 0.99
+  },
+  "overall": 0.941,
+  "verdictCounts": {
+    "PASS": 40,
+    "CAUTION": 7,
+    "FAIL": 3
+  },
+  "overInterpretationRate": 0.02,
+  "constraintLossRate": 0,
+  "terminology": {
+    "correctApplied": 4,
+    "correctTotal": 5,
+    "missed": 1,
+    "falseViolations": 0,
+    "falseTotal": 1,
+    "preserveLost": 0,
+    "preserveTotal": 12,
+    "errorRate": 0.056
+  },
+  "suggestionOverreachCases": 2,
+  "taxonomy": {
+    "INTENT_DRIFT": 8,
+    "TERMINOLOGY_ERROR": 1,
+    "OVER_INTERPRETATION": 1
+  },
+  "categoryScores": {
+    "A": 0.906,
+    "B": 0.885,
+    "C": 0.915,
+    "D": 0.909,
+    "E": 0.99,
+    "F": 0.906,
+    "G": 0.948,
+    "H": 0.99,
+    "I": 1,
+    "J": 0.969
+  },
+  "topFailures": [
+    {
+      "id": "J04",
+      "verdict": "FAIL",
+      "score": 0.898,
+      "failures": [
+        {
+          "type": "OVER_INTERPRETATION",
+          "detail": "invented: 重新做"
+        }
+      ],
+      "evidence": {
+        "delivered": "请对之前提到的那个东西进行外观升级，使其看起来更高级，但不要重新制作。 让那个东西看起来更高级 用户之前提到过某个东西，现在澄清不是要重新做 不要重新做 高级感 升级后的那个东西",
+        "correctedInput": "我刚才说的那个不是要重新做，我只是想让它看起来更高级一点，你懂我意思吧。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [
+          "用户之前提到过某个东西，现在澄清不是要重新做"
+        ],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [
+          "重新做"
+        ],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "C05",
+      "verdict": "FAIL",
+      "score": 0.625,
+      "failures": [
+        {
+          "type": "TERMINOLOGY_ERROR",
+          "detail": "HT mail→HTML"
+        }
+      ],
+      "evidence": {
+        "delivered": "请帮我查看并分析这个 HT mail 页面，提供你的看法或建议。 查看并分析 HT mail 页面 对页面的分析或建议",
+        "correctedInput": "帮我看一下这个 HT mail 页面。",
+        "detectedIntent": "general",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [
+          {
+            "type": "correct",
+            "label": "HT mail→HTML",
+            "from": "HT mail",
+            "to": "HTML",
+            "pass": false
+          }
+        ],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "D01",
+      "verdict": "FAIL",
+      "score": 0.598,
+      "failures": [
+        {
+          "type": "INTENT_DRIFT",
+          "detail": "core tokens missing: sequel"
+        }
+      ],
+      "evidence": {
+        "delivered": "这个电影的续集写得不错。 表达对电影续集的正面评价 无特定输出",
+        "correctedInput": "这个电影的 sequel 写得不错。",
+        "detectedIntent": "general",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [
+          {
+            "type": "false",
+            "label": "sequel≠SQL",
+            "from": "sequel",
+            "to": "SQL",
+            "pass": true
+          }
+        ],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "A05",
+      "verdict": "CAUTION",
+      "score": 0.79,
+      "failures": [
+        {
+          "type": "INTENT_DRIFT",
+          "detail": "task rewriting ≠ presentation"
+        }
+      ],
+      "evidence": {
+        "delivered": "请帮我优化这个PPT，使其更好。 优化PPT 优化后的PPT",
+        "correctedInput": "这个 PPT 感觉不太好，你帮我优化一下。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "B02",
+      "verdict": "CAUTION",
+      "score": 0.79,
+      "failures": [
+        {
+          "type": "INTENT_DRIFT",
+          "detail": "task rewriting ≠ ui_design"
+        }
+      ],
+      "evidence": {
+        "delivered": "请对这个页面进行整体优化，包括布局、视觉、内容和用户体验等方面，确保页面更加美观、清晰和易用。 整体优化这个页面 优化后的页面",
+        "correctedInput": "帮我把这个页面整体优化一下。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [
+          {
+            "original": "帮我把这个，就是这个页面，整体整体优化一下。",
+            "corrected": "帮我把这个页面整体优化一下。",
+            "confidence": 0.95,
+            "reason": "移除口语重复和冗余表达，保留核心意图。"
+          }
+        ],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "F02",
+      "verdict": "CAUTION",
+      "score": 0.79,
+      "failures": [
+        {
+          "type": "INTENT_DRIFT",
+          "detail": "task rewriting ≠ ui_design"
+        }
+      ],
+      "evidence": {
+        "delivered": "请帮我优化首页，具体优化方向待定。 优化首页 优化后的首页",
+        "correctedInput": "帮我把首页优化一下。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "F03",
+      "verdict": "CAUTION",
+      "score": 0.79,
+      "failures": [
+        {
+          "type": "INTENT_DRIFT",
+          "detail": "task rewriting ≠ presentation"
+        }
+      ],
+      "evidence": {
+        "delivered": "请帮我优化这个 PPT，使其看起来更专业。 将 PPT 优化得更专业 专业 改进后的 PPT",
+        "correctedInput": "帮我把这个 PPT 做得专业一点。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": false
+      }
+    },
+    {
+      "id": "A01",
+      "verdict": "CAUTION",
+      "score": 0.738,
+      "failures": [
+        {
+          "type": "INTENT_DRIFT",
+          "detail": "task rewriting ≠ ui_design"
+        }
+      ],
+      "evidence": {
+        "delivered": "请帮我优化这个页面的视觉设计，使其看起来更高级、更有质感。 提升页面的高级感 改进后的页面设计",
+        "correctedInput": "帮我把这个页面弄得高级一点。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "B01",
+      "verdict": "CAUTION",
+      "score": 0.738,
+      "failures": [
+        {
+          "type": "INTENT_DRIFT",
+          "detail": "task rewriting ≠ ui_design"
+        }
+      ],
+      "evidence": {
+        "delivered": "请帮我改进这个页面的整体设计，使其看起来更高级、更有质感。 让页面整体看起来高级一点 改进后的页面设计",
+        "correctedInput": "我想让这个页面，整体看起来高级一点。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [
+          {
+            "original": "就是我想让这个页面，就是整体看起来高级一点。",
+            "corrected": "我想让这个页面，整体看起来高级一点。",
+            "confidence": 0.9,
+            "reason": "移除口语填充词'就是'，使表达更简洁。"
+          }
+        ],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "G02",
+      "verdict": "CAUTION",
+      "score": 0.738,
+      "failures": [
+        {
+          "type": "INTENT_DRIFT",
+          "detail": "task rewriting ≠ ui_design"
+        }
+      ],
+      "evidence": {
+        "delivered": "请提升这个 landing page 的质感，使其看起来更 premium。 提升 landing page 的 premium 感 premium 更新后的 landing page 设计",
+        "correctedInput": "帮我把这个 landing page 做得更 premium 一点。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": false
+      }
+    }
+  ],
+  "judge": null,
+  "casesDetail": [
+    {
+      "id": "A01",
+      "category": "A",
+      "input": "帮我把这个页面弄得高级一点。",
+      "inputSource": "voice",
+      "expectedTask": "ui_design",
+      "score": 0.738,
+      "verdict": "CAUTION",
+      "dims": {
+        "fidelity": 0.4,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 0.65,
+        "antiOI": 1
+      },
+      "failures": [
+        {
+          "type": "INTENT_DRIFT",
+          "detail": "task rewriting ≠ ui_design"
+        }
+      ],
+      "evidence": {
+        "delivered": "请帮我优化这个页面的视觉设计，使其看起来更高级、更有质感。 提升页面的高级感 改进后的页面设计",
+        "correctedInput": "帮我把这个页面弄得高级一点。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "A02",
+      "category": "A",
+      "input": "帮我把这个东西整理得专业一点。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请将以下内容整理得更专业：<内容> 将内容整理得更专业 专业 整理后的内容",
+        "correctedInput": "帮我把这个东西整理得专业一点。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "A03",
+      "category": "A",
+      "input": "这个写得有点乱，你帮我重新弄一下。",
+      "inputSource": "voice",
+      "expectedTask": "rewriting",
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请帮我重新整理这段内容，使其更清晰、更有条理。 重新整理内容，使其更清晰 重新整理后的内容",
+        "correctedInput": "这个写得有点乱，你帮我重新弄一下。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "A04",
+      "category": "A",
+      "input": "帮我把这段话说得更正式一点。",
+      "inputSource": "voice",
+      "expectedTask": "rewriting",
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请将以下文本改写得更正式： [在此处粘贴需要改写的文本] 将用户提供的文本改写得更正式 正式 改写后的正式文本",
+        "correctedInput": "帮我把这段话说得更正式一点。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "A05",
+      "category": "A",
+      "input": "这个 PPT 感觉不太好，你帮我优化一下。",
+      "inputSource": "voice",
+      "expectedTask": "presentation",
+      "score": 0.79,
+      "verdict": "CAUTION",
+      "dims": {
+        "fidelity": 0.4,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [
+        {
+          "type": "INTENT_DRIFT",
+          "detail": "task rewriting ≠ presentation"
+        }
+      ],
+      "evidence": {
+        "delivered": "请帮我优化这个PPT，使其更好。 优化PPT 优化后的PPT",
+        "correctedInput": "这个 PPT 感觉不太好，你帮我优化一下。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "B01",
+      "category": "B",
+      "input": "就是我想让这个页面，就是整体看起来高级一点。",
+      "inputSource": "voice",
+      "expectedTask": "ui_design",
+      "score": 0.738,
+      "verdict": "CAUTION",
+      "dims": {
+        "fidelity": 0.4,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 0.65,
+        "antiOI": 1
+      },
+      "failures": [
+        {
+          "type": "INTENT_DRIFT",
+          "detail": "task rewriting ≠ ui_design"
+        }
+      ],
+      "evidence": {
+        "delivered": "请帮我改进这个页面的整体设计，使其看起来更高级、更有质感。 让页面整体看起来高级一点 改进后的页面设计",
+        "correctedInput": "我想让这个页面，整体看起来高级一点。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [
+          {
+            "original": "就是我想让这个页面，就是整体看起来高级一点。",
+            "corrected": "我想让这个页面，整体看起来高级一点。",
+            "confidence": 0.9,
+            "reason": "移除口语填充词'就是'，使表达更简洁。"
+          }
+        ],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "B02",
+      "category": "B",
+      "input": "帮我把这个，就是这个页面，整体整体优化一下。",
+      "inputSource": "voice",
+      "expectedTask": "ui_design",
+      "score": 0.79,
+      "verdict": "CAUTION",
+      "dims": {
+        "fidelity": 0.4,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [
+        {
+          "type": "INTENT_DRIFT",
+          "detail": "task rewriting ≠ ui_design"
+        }
+      ],
+      "evidence": {
+        "delivered": "请对这个页面进行整体优化，包括布局、视觉、内容和用户体验等方面，确保页面更加美观、清晰和易用。 整体优化这个页面 优化后的页面",
+        "correctedInput": "帮我把这个页面整体优化一下。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [
+          {
+            "original": "帮我把这个，就是这个页面，整体整体优化一下。",
+            "corrected": "帮我把这个页面整体优化一下。",
+            "confidence": 0.95,
+            "reason": "移除口语重复和冗余表达，保留核心意图。"
+          }
+        ],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "B03",
+      "category": "B",
+      "input": "我想让它，就是说，看起来不要那么乱。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 0.948,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 0.65,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请让[对象]看起来更整洁，减少杂乱感。 让对象看起来不那么乱 不要那么乱 修改后的对象",
+        "correctedInput": "我想让它看起来不要那么乱。",
+        "detectedIntent": "editing",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [
+          {
+            "original": "我想让它，就是说，看起来不要那么乱。",
+            "corrected": "我想让它看起来不要那么乱。",
+            "confidence": 0.9,
+            "reason": "移除口语填充词，使表达更简洁清晰。"
+          }
+        ],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "B04",
+      "category": "B",
+      "input": "这个你帮我稍微，就是稍微优化一下吧。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请对以下内容进行轻度优化，保持原意，提升表达流畅度：\n[待优化内容] 对指定内容进行轻度优化 轻度优化，不过度修改 优化后的内容",
+        "correctedInput": "这个你帮我稍微优化一下吧。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [
+          {
+            "original": "这个你帮我稍微，就是稍微优化一下吧。",
+            "corrected": "这个你帮我稍微优化一下吧。",
+            "confidence": 0.9,
+            "reason": "移除口语填充词'就是'，合并重复的'稍微'，使表达更简洁。"
+          }
+        ],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "B05",
+      "category": "B",
+      "input": "就是我觉得这个地方吧，嗯，有点不太对。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 0.948,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 0.65,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "我觉得这个地方有点不太对，请帮我分析一下可能的问题。 指出这个地方有问题 对问题的描述或分析",
+        "correctedInput": "我觉得这个地方吧，有点不太对。",
+        "detectedIntent": "general",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [
+          {
+            "original": "就是我觉得这个地方吧，嗯，有点不太对。",
+            "corrected": "我觉得这个地方吧，有点不太对。",
+            "confidence": 0.9,
+            "reason": "Removed filler words and hesitation sounds."
+          }
+        ],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "C01",
+      "category": "C",
+      "input": "帮我接一下 deep seek 的 API。",
+      "inputSource": "voice",
+      "expectedTask": "coding",
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请帮我接入 DeepSeek 的 API，提供接入步骤和示例代码。 接入 DeepSeek 的 API 接入 DeepSeek API 的步骤和示例代码",
+        "correctedInput": "帮我接一下 DeepSeek 的 API。",
+        "detectedIntent": "coding",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [
+          {
+            "original": "deep seek",
+            "corrected": "DeepSeek",
+            "confidence": 0.98,
+            "reason": "术语匹配：DeepSeek 是已知的 AI 模型提供商，语音识别中常将 DeepSeek 误听为 deep seek。"
+          }
+        ],
+        "termChecks": [
+          {
+            "type": "correct",
+            "label": "deep seek→DeepSeek",
+            "from": "deep seek",
+            "to": "DeepSeek",
+            "pass": true
+          },
+          {
+            "type": "preserve",
+            "label": "API",
+            "term": "API",
+            "pass": true
+          }
+        ],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "C02",
+      "category": "C",
+      "input": "帮我写一个 sequel 查询数据库。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "帮我写一个 SQL 查询数据库。 Write a SQL query to interact with a database. A SQL query",
+        "correctedInput": "帮我写一个 SQL 查询数据库。",
+        "detectedIntent": "coding",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [
+          {
+            "original": "sequel",
+            "corrected": "SQL",
+            "confidence": 0.9,
+            "reason": "ASR homophone; 'sequel' is likely 'SQL' in the context of database queries."
+          }
+        ],
+        "termChecks": [
+          {
+            "type": "correct",
+            "label": "sequel→SQL",
+            "from": "sequel",
+            "to": "SQL",
+            "pass": true
+          }
+        ],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "C03",
+      "category": "C",
+      "input": "帮我用 react 做一下这个页面。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 0.948,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 0.65,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请用 React 实现这个页面。 用 React 实现这个页面 使用 React React 页面代码",
+        "correctedInput": "帮我用 react 做一下这个页面。",
+        "detectedIntent": "coding",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [
+          {
+            "type": "correct",
+            "label": "react→React",
+            "from": "react",
+            "to": "React",
+            "pass": true
+          }
+        ],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "C04",
+      "category": "C",
+      "input": "帮我分析一下这个 JASON 数据。",
+      "inputSource": "voice",
+      "expectedTask": "data_analysis",
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请分析以下 JSON 数据： Analyze the given JSON data Analysis of the JSON data",
+        "correctedInput": "帮我分析一下这个 JSON 数据。",
+        "detectedIntent": "data_analysis",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [
+          {
+            "original": "JASON",
+            "corrected": "JSON",
+            "confidence": 0.9,
+            "reason": "ASR homophone; 'JSON' is a common data format, context suggests data analysis."
+          }
+        ],
+        "termChecks": [
+          {
+            "type": "correct",
+            "label": "JASON→JSON",
+            "from": "JASON",
+            "to": "JSON",
+            "pass": true
+          }
+        ],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "C05",
+      "category": "C",
+      "input": "帮我看一下这个 HT mail 页面。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 0.625,
+      "verdict": "FAIL",
+      "dims": {
+        "fidelity": 0.5,
+        "terminology": 0,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [
+        {
+          "type": "TERMINOLOGY_ERROR",
+          "detail": "HT mail→HTML"
+        }
+      ],
+      "evidence": {
+        "delivered": "请帮我查看并分析这个 HT mail 页面，提供你的看法或建议。 查看并分析 HT mail 页面 对页面的分析或建议",
+        "correctedInput": "帮我看一下这个 HT mail 页面。",
+        "detectedIntent": "general",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [
+          {
+            "type": "correct",
+            "label": "HT mail→HTML",
+            "from": "HT mail",
+            "to": "HTML",
+            "pass": false
+          }
+        ],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "D01",
+      "category": "D",
+      "input": "这个电影的 sequel 写得不错。",
+      "inputSource": "text",
+      "expectedTask": null,
+      "score": 0.598,
+      "verdict": "FAIL",
+      "dims": {
+        "fidelity": 0,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 0.65,
+        "antiOI": 1
+      },
+      "failures": [
+        {
+          "type": "INTENT_DRIFT",
+          "detail": "core tokens missing: sequel"
+        }
+      ],
+      "evidence": {
+        "delivered": "这个电影的续集写得不错。 表达对电影续集的正面评价 无特定输出",
+        "correctedInput": "这个电影的 sequel 写得不错。",
+        "detectedIntent": "general",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [
+          {
+            "type": "false",
+            "label": "sequel≠SQL",
+            "from": "sequel",
+            "to": "SQL",
+            "pass": true
+          }
+        ],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "D02",
+      "category": "D",
+      "input": "帮我写一个 SQL 查询。",
+      "inputSource": "text",
+      "expectedTask": null,
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请帮我写一个 SQL 查询。请提供数据库表结构、需要查询的数据以及任何特定条件。 Write a SQL query SQL query",
+        "correctedInput": "帮我写一个 SQL 查询。",
+        "detectedIntent": "coding",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [
+          {
+            "type": "preserve",
+            "label": "SQL",
+            "term": "SQL",
+            "pass": true
+          }
+        ],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "D03",
+      "category": "D",
+      "input": "帮我用 React 重构这个页面。",
+      "inputSource": "text",
+      "expectedTask": null,
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请用 React 重构这个页面，保持原有功能和样式。 用 React 重构这个页面 使用 React 重构后的页面",
+        "correctedInput": "帮我用 React 重构这个页面。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [
+          {
+            "type": "preserve",
+            "label": "React",
+            "term": "React",
+            "pass": true
+          }
+        ],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "D04",
+      "category": "D",
+      "input": "帮我接 DeepSeek API。",
+      "inputSource": "text",
+      "expectedTask": null,
+      "score": 0.948,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 0.65,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请帮我集成 DeepSeek API，提供接入步骤和示例代码。 Integrate the DeepSeek API Guidance or code for API integration",
+        "correctedInput": "帮我接 DeepSeek API。",
+        "detectedIntent": "coding",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [
+          {
+            "original": "deepseek",
+            "corrected": "DeepSeek",
+            "confidence": 0.98,
+            "reason": "Contextual terminology match: 'deepseek' refers to the AI model provider DeepSeek."
+          }
+        ],
+        "termChecks": [
+          {
+            "type": "preserve",
+            "label": "DeepSeek",
+            "term": "DeepSeek",
+            "pass": true
+          },
+          {
+            "type": "preserve",
+            "label": "API",
+            "term": "API",
+            "pass": true
+          }
+        ],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "D05",
+      "category": "D",
+      "input": "帮我分析这个 JSON 文件。",
+      "inputSource": "text",
+      "expectedTask": null,
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请分析这个 JSON 文件，提供其结构、内容概述和可能的统计信息。 分析这个 JSON 文件 分析结果",
+        "correctedInput": "帮我分析这个 JSON 文件。",
+        "detectedIntent": "data_analysis",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [
+          {
+            "type": "preserve",
+            "label": "JSON",
+            "term": "JSON",
+            "pass": true
+          }
+        ],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "E01",
+      "category": "E",
+      "input": "重新设计首页，但是不要改现有功能。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "重新设计首页，但保持所有现有功能不变。 重新设计首页，同时保持所有现有功能不变 不要改现有功能 重新设计的首页方案",
+        "correctedInput": "重新设计首页，但是不要改现有功能。",
+        "detectedIntent": "ui_design",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": false
+      }
+    },
+    {
+      "id": "E02",
+      "category": "E",
+      "input": "帮我优化这个页面，但是不要增加新的页面。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "优化这个页面，但不要增加新的页面。 优化这个页面 不要增加新的页面 优化后的页面",
+        "correctedInput": "帮我优化这个页面，但是不要增加新的页面。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": false
+      }
+    },
+    {
+      "id": "E03",
+      "category": "E",
+      "input": "帮我写得专业一点，但是不要改变原来的意思。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请将以下文本改写得更专业，同时确保不改变原意。 将文本改写得更专业，同时保持原意不变 不要改变原来的意思 专业 改写后的文本",
+        "correctedInput": "帮我写得专业一点，但是不要改变原来的意思。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": false
+      }
+    },
+    {
+      "id": "E04",
+      "category": "E",
+      "input": "帮我分析数据，不要自己编数据。",
+      "inputSource": "voice",
+      "expectedTask": "data_analysis",
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请分析我提供的数据，不要自己编造数据。 分析数据 不要自己编数据 数据分析结果",
+        "correctedInput": "帮我分析数据，不要自己编数据。",
+        "detectedIntent": "data_analysis",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": false
+      }
+    },
+    {
+      "id": "E05",
+      "category": "E",
+      "input": "做得高级一点，但是不要太花哨。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 0.948,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 0.65,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请将内容调整得更高级，但保持简洁，不要过于花哨。 提升高级感，同时避免花哨 不要太花哨 高级 简洁 修改后的设计或内容",
+        "correctedInput": "做得高级一点，但是不要太花哨。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "F01",
+      "category": "F",
+      "input": "帮我把按钮做得高级一点。",
+      "inputSource": "voice",
+      "expectedTask": "ui_design",
+      "score": 0.948,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 0.65,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请帮我重新设计这个按钮，使其看起来更高级、更有质感。 提升按钮的视觉高级感 改进后的按钮设计",
+        "correctedInput": "帮我把按钮做得高级一点。",
+        "detectedIntent": "ui_design",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [
+          "渐变"
+        ],
+        "noiseHits": [],
+        "uncertaintyRecorded": false
+      }
+    },
+    {
+      "id": "F02",
+      "category": "F",
+      "input": "帮我把首页优化一下。",
+      "inputSource": "voice",
+      "expectedTask": "ui_design",
+      "score": 0.79,
+      "verdict": "CAUTION",
+      "dims": {
+        "fidelity": 0.4,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [
+        {
+          "type": "INTENT_DRIFT",
+          "detail": "task rewriting ≠ ui_design"
+        }
+      ],
+      "evidence": {
+        "delivered": "请帮我优化首页，具体优化方向待定。 优化首页 优化后的首页",
+        "correctedInput": "帮我把首页优化一下。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "F03",
+      "category": "F",
+      "input": "帮我把这个 PPT 做得专业一点。",
+      "inputSource": "voice",
+      "expectedTask": "presentation",
+      "score": 0.79,
+      "verdict": "CAUTION",
+      "dims": {
+        "fidelity": 0.4,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [
+        {
+          "type": "INTENT_DRIFT",
+          "detail": "task rewriting ≠ presentation"
+        }
+      ],
+      "evidence": {
+        "delivered": "请帮我优化这个 PPT，使其看起来更专业。 将 PPT 优化得更专业 专业 改进后的 PPT",
+        "correctedInput": "帮我把这个 PPT 做得专业一点。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": false
+      }
+    },
+    {
+      "id": "F04",
+      "category": "F",
+      "input": "帮我把这个数据分析一下。",
+      "inputSource": "voice",
+      "expectedTask": "data_analysis",
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请分析我提供的数据，并给出关键发现和结论。 分析用户提供的数据 数据分析结果",
+        "correctedInput": "帮我把这个数据分析一下。",
+        "detectedIntent": "data_analysis",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "F05",
+      "category": "F",
+      "input": "帮我写一个产品介绍。",
+      "inputSource": "voice",
+      "expectedTask": "writing",
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请帮我写一个产品介绍。 写一个产品介绍 产品介绍文本",
+        "correctedInput": "帮我写一个产品介绍。",
+        "detectedIntent": "writing",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [
+          "目标受众"
+        ],
+        "noiseHits": [],
+        "uncertaintyRecorded": false
+      }
+    },
+    {
+      "id": "G01",
+      "category": "G",
+      "input": "帮我把这个 UI redesign 一下，但是整体还是要 minimal。",
+      "inputSource": "voice",
+      "expectedTask": "ui_design",
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请对这个 UI 进行 redesign，整体保持 minimal 风格。 redesign 这个 UI，保持整体 minimal 整体要 minimal minimal redesign 后的 UI 设计",
+        "correctedInput": "帮我把这个 UI redesign 一下，但是整体还是要 minimal。",
+        "detectedIntent": "ui_design",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [
+          {
+            "type": "preserve",
+            "label": "UI",
+            "term": "UI",
+            "pass": true
+          }
+        ],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": false
+      }
+    },
+    {
+      "id": "G02",
+      "category": "G",
+      "input": "帮我把这个 landing page 做得更 premium 一点。",
+      "inputSource": "voice",
+      "expectedTask": "ui_design",
+      "score": 0.738,
+      "verdict": "CAUTION",
+      "dims": {
+        "fidelity": 0.4,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 0.65,
+        "antiOI": 1
+      },
+      "failures": [
+        {
+          "type": "INTENT_DRIFT",
+          "detail": "task rewriting ≠ ui_design"
+        }
+      ],
+      "evidence": {
+        "delivered": "请提升这个 landing page 的质感，使其看起来更 premium。 提升 landing page 的 premium 感 premium 更新后的 landing page 设计",
+        "correctedInput": "帮我把这个 landing page 做得更 premium 一点。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": false
+      }
+    },
+    {
+      "id": "G03",
+      "category": "G",
+      "input": "这个 interaction 有点复杂，帮我 simplify 一下。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请帮我简化这个 interaction，使其更简洁易懂。 简化 interaction 简化后的 interaction",
+        "correctedInput": "这个 interaction 有点复杂，帮我 simplify 一下。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "G04",
+      "category": "G",
+      "input": "帮我 optimize 一下这个 API。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请帮我优化这个 API，包括性能、可维护性和代码质量方面的改进。 优化这个 API 优化后的 API 或优化建议",
+        "correctedInput": "帮我 optimize 一下这个 API。",
+        "detectedIntent": "general",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [
+          {
+            "type": "preserve",
+            "label": "API",
+            "term": "API",
+            "pass": true
+          }
+        ],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": false
+      }
+    },
+    {
+      "id": "G05",
+      "category": "G",
+      "input": "这个 prompt 帮我 rewrite 得更 professional 一点。",
+      "inputSource": "voice",
+      "expectedTask": "rewriting",
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请帮我将以下 prompt 改写得更专业一些。 Rewrite the given prompt to be more professional. professional A rewritten version of the prompt.",
+        "correctedInput": "这个 prompt 帮我 rewrite 得更 professional 一点。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [
+          {
+            "type": "preserve",
+            "label": "prompt",
+            "term": "prompt",
+            "pass": true
+          }
+        ],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": false
+      }
+    },
+    {
+      "id": "H01",
+      "category": "H",
+      "input": "把刚才那个再简洁一点。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请将刚才的 PromptKey 首页设计修改得更加简洁，去除不必要的元素，保持高端大气的风格。 将 PromptKey 首页设计修改得更简洁 当前任务：设计 PromptKey 首页；最近输入：做一个高端大气的首页 保持高端大气的风格 更加简洁 修改后的首页设计方案",
+        "correctedInput": "把刚才那个再简洁一点。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [
+          "当前任务：设计 PromptKey 首页",
+          "最近输入：做一个高端大气的首页"
+        ],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "H02",
+      "category": "H",
+      "input": "那个按钮再小一点。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 0.948,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 0.65,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请将那个按钮的尺寸调小一些。 将按钮尺寸调小 当前任务：设计 PromptKey 首页 调整后的设计",
+        "correctedInput": "那个按钮再小一点。",
+        "detectedIntent": "editing",
+        "subtasks": [],
+        "intentContext": [
+          "当前任务：设计 PromptKey 首页"
+        ],
+        "conservative": false,
+        "corrections": [
+          {
+            "original": "那个按钮再小一点。",
+            "corrected": "那个按钮再小一点。",
+            "confidence": 1,
+            "reason": "输入清晰，无需修正。"
+          }
+        ],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "H03",
+      "category": "H",
+      "input": "这个地方换一种感觉。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请修改首页中“这个地方”的设计，换一种感觉。 修改首页中“这个地方”的设计感觉 当前任务：设计 PromptKey 首页；最近输入：做一个高端大气的首页 修改后的设计",
+        "correctedInput": "这个地方换一种感觉。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [
+          "当前任务：设计 PromptKey 首页",
+          "最近输入：做一个高端大气的首页"
+        ],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "H04",
+      "category": "H",
+      "input": "再高级一点。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请将当前 PromptKey 首页设计再提升一个档次，使其更显高级。 提升 PromptKey 首页设计的高级感 当前任务：设计 PromptKey 首页；最近输入：做一个高端大气的首页 高端 大气 修改后的首页设计",
+        "correctedInput": "再高级一点。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [
+          "当前任务：设计 PromptKey 首页",
+          "最近输入：做一个高端大气的首页"
+        ],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "H05",
+      "category": "H",
+      "input": "继续优化。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "继续优化 PromptKey 首页的设计，保持高端大气的风格，可考虑视觉、布局、内容等方面的改进。 继续优化 PromptKey 首页设计 当前任务：设计 PromptKey 首页；最近输入：做一个高端大气的首页 高端大气 优化后的首页设计",
+        "correctedInput": "继续优化。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [
+          "当前任务：设计 PromptKey 首页",
+          "最近输入：做一个高端大气的首页"
+        ],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "I01",
+      "category": "I",
+      "input": "先帮我分析一下这个数据，然后根据分析结果做一个汇报。",
+      "inputSource": "voice",
+      "expectedTask": "multi_step",
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请先分析这份数据，然后根据分析结果制作一份汇报。 分析数据并基于分析结果制作汇报 汇报材料",
+        "correctedInput": "先帮我分析一下这个数据，然后根据分析结果做一个汇报。",
+        "detectedIntent": "multi_step",
+        "subtasks": [
+          "分析数据",
+          "根据分析结果制作汇报"
+        ],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": false
+      }
+    },
+    {
+      "id": "I02",
+      "category": "I",
+      "input": "帮我先把这个页面分析一下，然后给我一个优化方案。",
+      "inputSource": "voice",
+      "expectedTask": "multi_step",
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请先分析这个页面，然后提供优化方案。 分析页面并提供优化方案 页面分析结果和优化方案",
+        "correctedInput": "帮我先把这个页面分析一下，然后给我一个优化方案。",
+        "detectedIntent": "multi_step",
+        "subtasks": [
+          "分析页面",
+          "制定优化方案"
+        ],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "I03",
+      "category": "I",
+      "input": "帮我写一下 PRD，然后再根据 PRD 做一个页面。",
+      "inputSource": "voice",
+      "expectedTask": "multi_step",
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请先撰写一份 PRD（产品需求文档），然后根据该 PRD 制作一个页面。 撰写 PRD 并根据 PRD 制作页面 PRD 文档和页面",
+        "correctedInput": "帮我写一下 PRD，然后再根据 PRD 做一个页面。",
+        "detectedIntent": "multi_step",
+        "subtasks": [
+          "写 PRD",
+          "根据 PRD 做页面"
+        ],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [
+          {
+            "type": "preserve",
+            "label": "PRD",
+            "term": "PRD",
+            "pass": true
+          }
+        ],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "I04",
+      "category": "I",
+      "input": "先翻译成英文，再帮我润色一下。",
+      "inputSource": "voice",
+      "expectedTask": "multi_step",
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请将以下文本翻译成英文，然后对英文译文进行润色，使其更自然、流畅。 将文本翻译成英文并润色 先翻译成英文 再润色英文译文 英文翻译及润色后的版本",
+        "correctedInput": "先翻译成英文，再帮我润色一下。",
+        "detectedIntent": "multi_step",
+        "subtasks": [
+          "翻译成英文",
+          "润色英文译文"
+        ],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "I05",
+      "category": "I",
+      "input": "帮我分析这个 SQL，然后告诉我哪里有问题，再给我修改后的版本。",
+      "inputSource": "voice",
+      "expectedTask": "multi_step",
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请分析以下 SQL 语句，指出其中存在的问题，并给出修改后的版本。 分析 SQL 并指出问题，提供修改后的版本 指出 SQL 中的问题 提供修改后的 SQL 版本 分析结果、问题列表、修改后的 SQL",
+        "correctedInput": "帮我分析这个 SQL，然后告诉我哪里有问题，再给我修改后的版本。",
+        "detectedIntent": "multi_step",
+        "subtasks": [
+          "分析 SQL",
+          "指出问题",
+          "提供修改后的版本"
+        ],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [
+          {
+            "type": "preserve",
+            "label": "SQL",
+            "term": "SQL",
+            "pass": true
+          }
+        ],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": false
+      }
+    },
+    {
+      "id": "J01",
+      "category": "J",
+      "input": "就是这个页面吧，我觉得现在看起来有点土，你帮我往那种苹果官网的感觉靠一下，但是也不要直接照着它抄。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请帮我重新设计这个页面，让它看起来更现代、高级，接近苹果官网的风格。注意不要直接抄袭苹果官网，要融入自己的设计元素。 重新设计当前页面，使其具有苹果官网的现代感和高级感，同时保持原创性 用户认为当前页面看起来有点土 往苹果官网的感觉靠 不要直接照着它抄 现代 高级 苹果风格 改进后的页面设计或设计建议",
+        "correctedInput": "这个页面吧，我觉得现在看起来有点土，你帮我往那种苹果官网的感觉靠一下，但是也不要直接照着它抄。",
+        "detectedIntent": "ui_design",
+        "subtasks": [],
+        "intentContext": [
+          "用户认为当前页面看起来有点土"
+        ],
+        "conservative": false,
+        "corrections": [
+          {
+            "original": "就是这个页面吧",
+            "corrected": "这个页面吧",
+            "confidence": 0.9,
+            "reason": "去除口语化的'就是'，使表达更简洁"
+          }
+        ],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "J02",
+      "category": "J",
+      "input": "我想让这个东西看起来专业一点，但是不要搞得特别复杂，最好还是简单一点，然后重点突出那个输入的地方。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 0.948,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 0.65,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "我想让这个东西看起来专业一点，但是不要搞得特别复杂，最好还是简单一点，然后重点突出那个输入的地方。 我想让这个东西看起来专业一点，但是不要搞得特别复杂，最好还是简单一点，然后重点突出那个输入的地方。",
+        "correctedInput": "我想让这个东西看起来专业一点，但是不要搞得特别复杂，最好还是简单一点，然后重点突出那个输入的地方。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": true,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "J03",
+      "category": "J",
+      "input": "这个现在感觉有点乱，你帮我收一收，但是原来的功能都别动，尤其是那个 AI 输入的东西不要给我删了。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "这个现在感觉有点乱，你帮我收一收，但是原来的功能都别动，尤其是那个 AI 输入的东西不要给我删了。 这个现在感觉有点乱，你帮我收一收，但是原来的功能都别动，尤其是那个 AI 输入的东西不要给我删了。",
+        "correctedInput": "这个现在感觉有点乱，你帮我收一收，但是原来的功能都别动，尤其是那个 AI 输入的东西不要给我删了。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": true,
+        "corrections": [],
+        "termChecks": [
+          {
+            "type": "preserve",
+            "label": "AI",
+            "term": "AI",
+            "pass": true
+          }
+        ],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "J04",
+      "category": "J",
+      "input": "我刚才说的那个不是要重新做，我只是想让它看起来更高级一点，你懂我意思吧。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 0.898,
+      "verdict": "FAIL",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 0.65,
+        "antiOI": 0.5
+      },
+      "failures": [
+        {
+          "type": "OVER_INTERPRETATION",
+          "detail": "invented: 重新做"
+        }
+      ],
+      "evidence": {
+        "delivered": "请对之前提到的那个东西进行外观升级，使其看起来更高级，但不要重新制作。 让那个东西看起来更高级 用户之前提到过某个东西，现在澄清不是要重新做 不要重新做 高级感 升级后的那个东西",
+        "correctedInput": "我刚才说的那个不是要重新做，我只是想让它看起来更高级一点，你懂我意思吧。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [
+          "用户之前提到过某个东西，现在澄清不是要重新做"
+        ],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [
+          "重新做"
+        ],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    },
+    {
+      "id": "J05",
+      "category": "J",
+      "input": "这个我也不知道怎么说，反正现在看着不太舒服，你按照一个比较高级、简洁、专业的方向帮我处理一下，但是不要乱加东西。",
+      "inputSource": "voice",
+      "expectedTask": null,
+      "score": 1,
+      "verdict": "PASS",
+      "dims": {
+        "fidelity": 1,
+        "terminology": 1,
+        "constraints": 1,
+        "executability": 1,
+        "antiOI": 1
+      },
+      "failures": [],
+      "evidence": {
+        "delivered": "请将当前内容优化为更高级、简洁、专业的风格，但不要添加任何额外内容。 将当前内容优化为更高级、简洁、专业的风格，同时保持原有内容不变。 不要乱加东西 高级 简洁 专业 优化后的内容",
+        "correctedInput": "这个我也不知道怎么说，反正现在看着不太舒服，你按照一个比较高级、简洁、专业的方向帮我处理一下，但是不要乱加东西。",
+        "detectedIntent": "rewriting",
+        "subtasks": [],
+        "intentContext": [],
+        "conservative": false,
+        "corrections": [],
+        "termChecks": [],
+        "lostConstraints": [],
+        "oiViolations": [],
+        "suggestionOverreach": [],
+        "noiseHits": [],
+        "uncertaintyRecorded": true
+      }
+    }
+  ]
+}

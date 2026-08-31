@@ -1,0 +1,104 @@
+{
+  "cases": [
+    {
+      "id": "C01",
+      "category": "C",
+      "name": "asr-deepseek-api",
+      "input": "帮我接一下 deep seek 的 API。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "coding",
+        "taskType": "single",
+        "intentTokens": [["DeepSeek", "deepseek"], "API"],
+        "terminology": { "correctCorrections": [{ "from": "deep seek", "to": "DeepSeek" }], "falseCorrections": [], "preserveTerms": ["API"] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "fidelityMin": 0.8,
+        "notes": "ASR 误听 deep seek → DeepSeek（高置信度，上下文明确）"
+      }
+    },
+    {
+      "id": "C02",
+      "category": "C",
+      "name": "asr-sequel-sql",
+      "input": "帮我写一个 sequel 查询数据库。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["SQL", "数据库"],
+        "terminology": { "correctCorrections": [{ "from": "sequel", "to": "SQL" }], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "fidelityMin": 0.8,
+        "notes": "数据库上下文 → sequel 为 SQL 同音误写，应纠正"
+      }
+    },
+    {
+      "id": "C03",
+      "category": "C",
+      "name": "asr-react",
+      "input": "帮我用 react 做一下这个页面。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["React", "页面"],
+        "terminology": { "correctCorrections": [{ "from": "react", "to": "React" }], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "react 大小写规范化 → React"
+      }
+    },
+    {
+      "id": "C04",
+      "category": "C",
+      "name": "asr-jason-json",
+      "input": "帮我分析一下这个 JASON 数据。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "data_analysis",
+        "taskType": "single",
+        "intentTokens": ["JSON", "数据"],
+        "terminology": { "correctCorrections": [{ "from": "JASON", "to": "JSON" }], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "fidelityMin": 0.8,
+        "notes": "数据上下文 → JASON 为 JSON 同音误写，应纠正"
+      }
+    },
+    {
+      "id": "C05",
+      "category": "C",
+      "name": "asr-html",
+      "input": "帮我看一下这个 HT mail 页面。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["HTML", "页面"],
+        "terminology": { "correctCorrections": [{ "from": "HT mail", "to": "HTML" }], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": [],
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "页面上下文 → HT mail 为 HTML 误听（字典无此变体，考验模型判断）"
+      }
+    }
+  ]
+}

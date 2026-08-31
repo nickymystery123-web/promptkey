@@ -1,0 +1,104 @@
+{
+  "cases": [
+    {
+      "id": "A01",
+      "category": "A",
+      "name": "basic-visual-upgrade",
+      "input": "帮我把这个页面弄得高级一点。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "ui_design",
+        "taskType": "single",
+        "intentTokens": ["页面", ["高级", "更高端"]],
+        "forbiddenInferences": ["玻璃", "渐变", "3D", "动画", "Apple", "苹果", "微交互"],
+        "constraints": [],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "fidelityMin": 0.8,
+        "notes": "不得擅自指定具体设计风格；不得自动加入 Apple/glassmorphism/3D 等具体方案"
+      }
+    },
+    {
+      "id": "A02",
+      "category": "A",
+      "name": "basic-professional-tidy",
+      "input": "帮我把这个东西整理得专业一点。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["专业"],
+        "forbiddenInferences": ["商务模板", "统一字体", "品牌色", "公司"],
+        "constraints": [],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "整理得更专业，不指定具体行业/模板"
+      }
+    },
+    {
+      "id": "A03",
+      "category": "A",
+      "name": "basic-rewrite-messy",
+      "input": "这个写得有点乱，你帮我重新弄一下。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "rewriting",
+        "taskType": "single",
+        "intentTokens": ["重新", ["乱", "整理", "理顺"]],
+        "forbiddenInferences": ["模板", "大纲"],
+        "constraints": [],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "重新整理凌乱内容，不得擅自套模板"
+      }
+    },
+    {
+      "id": "A04",
+      "category": "A",
+      "name": "basic-more-formal",
+      "input": "帮我把这段话说得更正式一点。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "rewriting",
+        "taskType": "single",
+        "intentTokens": ["正式"],
+        "forbiddenInferences": ["商务", "公文", "法律"],
+        "constraints": [],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "更正式但不得指定具体文体"
+      }
+    },
+    {
+      "id": "A05",
+      "category": "A",
+      "name": "basic-optimize-ppt",
+      "input": "这个 PPT 感觉不太好，你帮我优化一下。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "task": "presentation",
+        "taskType": "single",
+        "intentTokens": ["PPT", ["优化", "改进"]],
+        "forbiddenInferences": ["重新设计", "重做", "20 页", "商务蓝"],
+        "constraints": [],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "优化而非重做；不指定页数/风格"
+      }
+    }
+  ]
+}

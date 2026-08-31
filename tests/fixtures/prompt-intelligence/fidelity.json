@@ -1,0 +1,72 @@
+{
+  "cases": [
+    {
+      "name": "case8-no-hallucinated-preferences",
+      "input": "帮我把按钮做得高级一点。",
+      "inputSource": "voice",
+      "context": null,
+      "mockLLM": {
+        "correctedInput": "帮我把按钮做得高级一点。",
+        "corrections": [],
+        "intent": { "task": "ui_design", "object": "按钮", "goal": ["让按钮看起来更高级"], "context": [], "requirements": [], "constraints": [], "preferences": ["高级"], "expectedOutput": "" },
+        "inferredIntent": [],
+        "aiSuggestions": ["可以考虑更精细的阴影与字距"],
+        "uncertainties": [],
+        "optimizedPrompt": "优化按钮的视觉设计，使其看起来更高级。",
+        "structured": { "role": "", "objective": "优化按钮的视觉设计，使其看起来更高级", "context": "", "requirements": [], "style": ["高级"], "output": "" },
+        "fidelity": { "intentFidelity": 0.96, "semanticChanges": [], "addedAssumptions": [], "removedRequirements": [] }
+      },
+      "expect": {
+        "task": "ui_design",
+        "optimizedNotIncludes": ["玻璃拟态", "渐变", "3D", "动画", "深色模式"],
+        "conservative": false,
+        "fidelityMin": 0.9
+      }
+    },
+    {
+      "name": "case7-constraint-preserved-pass",
+      "input": "重新设计首页，但是不要改现有功能，也不要增加新的页面。",
+      "inputSource": "text",
+      "context": null,
+      "mockLLM": {
+        "correctedInput": "重新设计首页，但是不要改现有功能，也不要增加新的页面。",
+        "corrections": [],
+        "intent": { "task": "ui_design", "object": "首页", "goal": ["重新设计首页"], "context": [], "requirements": [], "constraints": ["不要改现有功能", "不要增加新的页面"], "preferences": [], "expectedOutput": "" },
+        "inferredIntent": [],
+        "aiSuggestions": [],
+        "uncertainties": [],
+        "optimizedPrompt": "重新设计首页，但不要改现有功能，也不要增加新的页面。",
+        "structured": { "role": "", "objective": "重新设计首页", "context": "", "requirements": ["不要改现有功能", "不要增加新的页面"], "style": [], "output": "" },
+        "fidelity": { "intentFidelity": 0.97, "semanticChanges": [], "addedAssumptions": [], "removedRequirements": [] }
+      },
+      "expect": {
+        "task": "ui_design",
+        "structuredRequirementsInclude": ["不要改现有功能", "不要增加新的页面"],
+        "conservative": false,
+        "fidelityMin": 0.9
+      }
+    },
+    {
+      "name": "fidelity-fail-drops-constraint-goes-conservative",
+      "input": "重新设计首页，但是不要改现有功能，也不要增加新的页面。",
+      "inputSource": "text",
+      "context": null,
+      "mockLLM": {
+        "correctedInput": "重新设计首页，增加新页面提升体验。",
+        "corrections": [],
+        "intent": { "task": "ui_design", "object": "首页", "goal": ["重新设计首页并增加新页面"], "context": [], "requirements": [], "constraints": [], "preferences": [], "expectedOutput": "" },
+        "inferredIntent": ["用户想要更多页面"],
+        "aiSuggestions": [],
+        "uncertainties": [],
+        "optimizedPrompt": "重新设计首页，增加新页面提升体验。",
+        "structured": { "role": "", "objective": "重新设计首页并增加新页面", "context": "", "requirements": [], "style": [], "output": "" },
+        "fidelity": { "intentFidelity": 0.5, "semanticChanges": ["added new page requirement"], "addedAssumptions": ["增加新页面"], "removedRequirements": ["不要改现有功能", "不要增加新的页面"] }
+      },
+      "expect": {
+        "conservative": true,
+        "objectiveIncludes": ["不要改现有功能"],
+        "objectiveNotIncludes": ["增加新页面提升体验"]
+      }
+    }
+  ]
+}

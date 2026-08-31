@@ -1,0 +1,109 @@
+{
+  "cases": [
+    {
+      "id": "J01",
+      "category": "J",
+      "name": "difficult-apple-direction-not-copy",
+      "input": "就是这个页面吧，我觉得现在看起来有点土，你帮我往那种苹果官网的感觉靠一下，但是也不要直接照着它抄。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["页面", "苹果", ["高级", "质感"]],
+        "constraints": [
+          { "label": "不要照抄", "groups": [["不要", "别", "不能", "不得", "避免", "不"], ["抄", "照搬", "复制", "一模一样", "雷同"]] }
+        ],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": ["渐变", "3D", "动画", "玻璃拟态", "复制", "照搬", "一模一样"],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "参考 Apple 大方向但不得直接复制；'土'→高级的视觉意图"
+      }
+    },
+    {
+      "id": "J02",
+      "category": "J",
+      "name": "difficult-simple-but-emphasize-input",
+      "input": "我想让这个东西看起来专业一点，但是不要搞得特别复杂，最好还是简单一点，然后重点突出那个输入的地方。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["专业", ["简单", "简洁"], "输入"],
+        "constraints": [
+          { "label": "不要复杂", "groups": [["不要", "别", "不能", "避免", "不"], ["复杂"]] }
+        ],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": ["渐变", "3D", "动画", "玻璃"],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "专业+简单+突出输入区，三要素齐备"
+      }
+    },
+    {
+      "id": "J03",
+      "category": "J",
+      "name": "difficult-keep-features-ai-input",
+      "input": "这个现在感觉有点乱，你帮我收一收，但是原来的功能都别动，尤其是那个 AI 输入的东西不要给我删了。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["乱", "收"],
+        "constraints": [
+          { "label": "功能别动", "groups": [["不要", "别", "不能", "不得", "不动", "不改", "保留", "保持", "维持"], ["功能"]] },
+          { "label": "AI 输入不删", "groups": [["不要", "别", "不能", "别删", "不删", "保留", "不动"], ["AI", "输入"]] }
+        ],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": ["AI"] },
+        "forbiddenInferences": ["渐变", "3D", "动画"],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "fidelityMin": 0.8,
+        "notes": "双约束：功能别动 + AI 输入不删（最高优先级）"
+      }
+    },
+    {
+      "id": "J04",
+      "category": "J",
+      "name": "difficult-not-redesign",
+      "input": "我刚才说的那个不是要重新做，我只是想让它看起来更高级一点，你懂我意思吧。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["高级"],
+        "forbiddenInferences": ["重新设计", "重新做", "重做", "改版", "推翻"],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "constraints": [],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "强调'不是重新做'→ 输出不得出现重新设计语义"
+      }
+    },
+    {
+      "id": "J05",
+      "category": "J",
+      "name": "difficult-vague-but-constrained",
+      "input": "这个我也不知道怎么说，反正现在看着不太舒服，你按照一个比较高级、简洁、专业的方向帮我处理一下，但是不要乱加东西。",
+      "inputSource": "voice",
+      "context": null,
+      "expected": {
+        "taskType": "single",
+        "intentTokens": ["高级", ["简洁", "极简"], ["专业", "正式"]],
+        "constraints": [
+          { "label": "不要乱加", "groups": [["不要", "别", "不能", "不", "避免"], ["乱加", "多添加", "添加额外", "加东西", "随意添加"]] }
+        ],
+        "terminology": { "correctCorrections": [], "falseCorrections": [], "preserveTerms": [] },
+        "forbiddenInferences": ["渐变", "3D", "动画", "玻璃拟态", "阴影"],
+        "contextInference": false,
+        "uncertaintyExpected": false,
+        "conservativeAllowed": false,
+        "notes": "模糊输入 + 高级/简洁/专业方向 + 不乱加东西约束"
+      }
+    }
+  ]
+}

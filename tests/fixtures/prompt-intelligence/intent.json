@@ -1,0 +1,27 @@
+{
+  "cases": [
+    {
+      "name": "case9-mixed-language-redesign",
+      "input": "帮我把这个 UI redesign 一下，但是整体还是要 minimal。",
+      "inputSource": "text",
+      "context": null,
+      "mockLLM": {
+        "correctedInput": "帮我把这个 UI redesign 一下，但是整体还是要 minimal。",
+        "corrections": [],
+        "intent": { "task": "ui_design", "object": "这个 UI", "goal": ["redesign 这个 UI"], "context": [], "requirements": [], "constraints": [], "preferences": ["minimal"], "expectedOutput": "" },
+        "inferredIntent": [],
+        "aiSuggestions": [],
+        "uncertainties": [],
+        "optimizedPrompt": "Redesign 这个 UI，整体保持 minimal 的视觉方向。",
+        "structured": { "role": "", "objective": "Redesign 这个 UI，整体保持 minimal 的视觉方向", "context": "", "requirements": [], "style": ["minimal"], "output": "" },
+        "fidelity": { "intentFidelity": 0.96, "semanticChanges": [], "addedAssumptions": [], "removedRequirements": [] }
+      },
+      "expect": {
+        "task": "ui_design",
+        "optimizedIncludes": ["UI", "minimal"],
+        "structuredStyleIncludes": ["minimal"],
+        "fidelityMin": 0.9
+      }
+    }
+  ]
+}
