@@ -64,41 +64,33 @@ export function selectedSectionIndex(state) {
 
 export function canConfirm(state) {
   const s = state.interaction;
-  if (s === "review") return true;
   if (s === "idle" || s === "input") return state.input.trim().length > 0;
   return false;
 }
 
 export function confirmEnabled(state) {
-  const s = state.interaction;
-  if (["understanding", "structuring", "improving", "rewriting", "sending", "delivered"].includes(s)) return false;
+  if (state.refinePending) return false;
   if (state.voice !== "idle") return false;
+  const s = state.interaction;
   if (s === "input") return state.input.trim().length > 0;
-  return true; // idle stays clickable so empty-input message can show (PRD behavior)
+  if (s === "idle") return true; // clickable to show empty-input hint
+  return false;
 }
 
 export function customButtonsEnabled(state) {
-  return ["review", "ready_to_send"].includes(state.interaction)
-    && !!currentPrompt(state)
-    && !(state.session && state.session.selection === "original"); // C1/C2 transform the optimized version
+  return false; // C1/C2 retired in 3E
 }
 
 export function isProcessing(state) {
-  return ["understanding", "structuring", "improving", "rewriting", "sending"].includes(state.interaction)
-    || state.voice === "processing";
+  return state.refinePending || state.voice === "processing";
 }
 
-/* 3C-2B: can the user REFINE the Composer content into a Creative Inbox Thought?
-   Requires non-empty Composer text AND a calm interaction (no AI/voice in flight),
-   so REFINE never races an ongoing analysis or a listening session. */
+/* 3E: can the user REFINE the Composer content into a Creative Inbox Thought?
+   Requires non-empty Composer text, a calm interaction, and no live voice/refine. */
 export function canRefine(state) {
   const s = state.interaction;
-  if (["understanding", "structuring", "improving", "rewriting", "sending", "delivered"].includes(s)) return false;
-  // Bug #10: only LIVE voice blocks REFINE — listening (mid-speech) and
-  // processing (finalizing). "error" is a TERMINAL voice state, not an active
-  // one: the user's words are already in the Composer (or typeable), so REFINE
-  // must remain available as the fallback path after a speech error. Blocking
-  // it would lock the user out of the Creative Inbox.
+  if (!["idle", "input"].includes(s)) return false;
+  if (state.refinePending) return false;
   if (state.voice === "listening" || state.voice === "processing") return false;
   return (state.input || "").trim().length > 0;
 }

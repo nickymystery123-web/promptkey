@@ -267,7 +267,7 @@ test("T: voice stop appends to the Composer and never creates an inbox Thought; 
 });
 
 /* ============ U. USE takes a thought back into the Composer (3C-2B) ============ */
-test("U: USE brings a thought back into the Composer — no auto-submit; manual submit then runs the pipeline (prefers refined)", async () => {
+test("U: USE brings a thought back into the Composer — no auto-submit; manual submit saves it to the Inbox (3E simplified)", async () => {
   const h = harness();
   h.store.dispatch(act.inboxAddRefined("idea", "text"));
   const id = h.store.getState().inbox.thoughts[0].id;
@@ -280,13 +280,13 @@ test("U: USE brings a thought back into the Composer — no auto-submit; manual 
   await h.flows.submitThought();
   await tick();
   const s = h.store.getState();
-  assert.equal(s.interaction, "review");
-  assert.equal(s.session.rawThought, "refined idea"); // refined sent when available
-  assert.equal(s.inbox.thoughts.length, 1); // inbox survives the USE
-  assert.match(s.session.currentPrompt.objective, /refined idea/);
+  assert.equal(s.interaction, "idle"); // 3E SUBMIT goes straight to idle
+  assert.equal(s.session, null); // no old pipeline session
+  assert.equal(s.inbox.thoughts.length, 2); // original thought + new submitted thought
+  assert.equal(s.inbox.thoughts[1].originalText, "refined idea");
 });
 
-test("U2: USE does not re-refine the thought (no AI on take-back; exactly one: the manual submit)", async () => {
+test("U2: USE does not re-refine the thought (no AI on take-back; 3E SUBMIT also calls no AI)", async () => {
   const h = harness();
   h.store.dispatch(act.inboxAddRefined("idea", "text"));
   const id = h.store.getState().inbox.thoughts[0].id;
@@ -294,7 +294,7 @@ test("U2: USE does not re-refine the thought (no AI on take-back; exactly one: t
   assert.equal(h.ai.calls.analyze, 0); // USE itself never calls AI
   await h.flows.submitThought();
   await tick();
-  assert.equal(h.ai.calls.analyze, 1); // exactly one: the manual submit pipeline
+  assert.equal(h.ai.calls.analyze, 0); // 3E SUBMIT stores the words directly, no AI
 });
 
 test("U3: refinement failure is best-effort — no half-baked Thought is ever created", async () => {
@@ -317,8 +317,8 @@ test("V: local inbox ops are synchronous — no AI, no async gate, even while an
   h.store.dispatch(act.updateInput("hanging idea"));
   const p = h.flows.refineFromComposer(); // async refine that hangs
   await tick();
-  // 3C-2B: while the refine is in flight, NO new Thought exists yet (created only
-  // after AI succeeds) — and local ops on existing thoughts stay instant.
+  // 3E: while the refine is in flight, NO new Thought exists yet (created only
+  // after SUBMIT) — and local ops on existing thoughts stay instant.
   const mid = h.store.getState();
   assert.equal(mid.inbox.thoughts.length, 1); // no half-baked Thought mid-flight
   assert.equal(mid.input, "hanging idea"); // Composer text never lost
@@ -331,7 +331,12 @@ test("V: local inbox ops are synchronous — no AI, no async gate, even while an
   assert.equal(isInboxExpanded(s, seededId), true);
   // the hung refinement never blocked any of the above (they returned immediately)
   h.ai.releaseNext();
-  await p; // now the refine resolves → creates the refined Thought
+  await p; // now the refine resolves → writes optimized text to Composer
+  await tick();
+  s = h.store.getState();
+  assert.equal(s.input, "OPTIMIZED ▸ hanging idea", "REFINE 结果写入 Composer");
+  assert.equal(s.inbox.thoughts.length, 1, "REFINE 本身不入箱");
+  await h.flows.submitThought();
   await tick();
   s = h.store.getState();
   assert.equal(s.inbox.thoughts.length, 2);
@@ -340,13 +345,17 @@ test("V: local inbox ops are synchronous — no AI, no async gate, even while an
 });
 
 /* ============ W. REFINE adds exactly one thought per call ============ */
-test("W: refineFromComposer creates exactly one Thought per successful refine, with originalText = user's words and refinedText = AI output", async () => {
+test("W: REFINE → SUBMIT creates exactly one Thought per successful refine, with originalText = user's words and refinedText = AI output", async () => {
   const h = harness();
   h.store.dispatch(act.updateInput("one"));
   await h.flows.refineFromComposer();
   await tick();
+  await h.flows.submitThought();
+  await tick();
   h.store.dispatch(act.updateInput("two"));
   await h.flows.refineFromComposer();
+  await tick();
+  await h.flows.submitThought();
   await tick();
   const s = h.store.getState();
   assert.equal(s.inbox.thoughts.length, 2);
@@ -365,14 +374,16 @@ test("X: NEW_THOUGHT keeps inbox thoughts & expansion; RESET clears the whole in
   const id = h.store.getState().inbox.thoughts[0].id;
   h.store.dispatch(act.inboxToggleExpanded(id));
 
-  // build a session, then start a new thought
+  // submit a thought, then start a new thought
   h.store.dispatch(act.updateInput("another idea"));
   await h.flows.submitThought();
   await tick();
+  assert.equal(h.store.getState().inbox.thoughts.length, 2);
   h.flows.newThought();
   let s = h.store.getState();
   assert.equal(s.interaction, "idle");
-  assert.equal(s.inbox.thoughts.length, 1); // inbox survives
+  assert.equal(s.session, null);
+  assert.equal(s.inbox.thoughts.length, 2); // inbox survives
   assert.equal(isInboxExpanded(s, id), true); // expansion survives
 
   // full reset clears everything
@@ -397,16 +408,21 @@ test("Y: using a thought (taking it back to the Composer) does not consume/delet
 });
 
 /* ============ Z. Voice-origin thought: source flows through USE → pipeline ============ */
-test("Z: voice-origin thought taken back via USE reports inputSource=voice when manually submitted", async () => {
+test("Z: voice-origin thought taken back via USE preserves origin in the Composer", async () => {
   const h = harness();
   h.store.dispatch(act.inboxAddRefined("spoken plan", "voice"));
   const id = h.store.getState().inbox.thoughts[0].id;
   await h.flows.sendThoughtToPrompt(id); // USE
+  const s0 = h.store.getState();
+  assert.equal(s0.inputOrigin, "thought"); // USE writes with thought provenance
+  assert.equal(s0.input, "spoken plan");
   await h.flows.submitThought(); // manual submit
   await tick();
-  assert.equal(h.store.getState().interaction, "review");
-  assert.equal(h.ai.lastOptions.inputSource, "voice"); // origin preserved
-  assert.equal(h.store.getState().session.rawThought, "spoken plan");
+  const s = h.store.getState();
+  assert.equal(s.interaction, "idle"); // 3E SUBMIT goes straight to idle
+  assert.equal(h.ai.calls.analyze, 0); // no AI on submit
+  assert.equal(s.inbox.thoughts.length, 2);
+  assert.equal(s.inbox.thoughts[1].originalText, "spoken plan");
 });
 
 /* ============ ZB. Empty-voice stop does not add a thought ============ */

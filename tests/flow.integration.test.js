@@ -21,7 +21,9 @@ function harness() {
     loadSession: async () => null,
     clearSession: async () => {},
     savePosition: async () => {},
-    loadPosition: async () => null
+    loadPosition: async () => null,
+    saveDraft: async () => {}, loadDraft: async () => null, clearDraft: async () => {},
+    saveInbox: async () => {}, loadInbox: async () => [], clearInbox: async () => {}
   };
   const delivered = { calls: 0, copies: [] };
   const delivery = {
@@ -41,79 +43,55 @@ function harness() {
   return { store, ai, flows, saved, delivered };
 }
 
-test("Input → Understanding → Structured (review, v1)", async () => {
+test("Input → SUBMIT → Creative Inbox (3E simplified)", async () => {
   const { store, flows } = harness();
   store.dispatch(act.updateInput("I want to create a premium AI product website"));
   await flows.submitThought();
   const s = store.getState();
-  assert.equal(s.interaction, "review");
-  assert.equal(s.session.versions.length, 1);
-  assert.equal(s.session.structuredPrompt.role, "Senior Product Designer");
+  assert.equal(s.interaction, "idle");
+  assert.equal(s.inbox.thoughts.length, 1);
+  assert.equal(s.inbox.thoughts[0].originalText, "I want to create a premium AI product website");
+  assert.equal(s.input, "");
 });
 
-test("C1 → Improve → review with v2 'improved'", async () => {
+test("Input → REFINE → SUBMIT → Creative Inbox with refinedText", async () => {
+  const { store, flows } = harness();
+  store.dispatch(act.updateInput("create a website"));
+  await flows.refineFromComposer();
+  let s = store.getState();
+  assert.equal(s.interaction, "input");
+  assert.equal(s.input, "Create a website", "REFINE 写 Composer");
+  assert.equal(s.inbox.thoughts.length, 0, "REFINE 本身不入箱");
+  await flows.submitThought();
+  s = store.getState();
+  assert.equal(s.interaction, "idle");
+  assert.equal(s.inbox.thoughts.length, 1);
+  assert.equal(s.inbox.thoughts[0].originalText, "create a website");
+  assert.ok(s.inbox.thoughts[0].refinedText);
+  assert.equal(s.input, "");
+});
+
+test("SUBMIT → New Thought clears Composer and keeps Inbox", async () => {
   const { store, flows } = harness();
   store.dispatch(act.updateInput("create a website"));
   await flows.submitThought();
-  await flows.improve();
-  const s = store.getState();
-  assert.equal(s.interaction, "review");
-  assert.equal(s.session.versions.length, 2);
-  assert.equal(s.session.versions[1].source, "improved");
-  assert.ok(s.session.currentPrompt.objective.includes("with a clear structure"));
-});
-
-test("C2 → Rewrite → review with v3 'rewritten'", async () => {
-  const { store, flows } = harness();
-  store.dispatch(act.updateInput("create a website"));
-  await flows.submitThought();
-  await flows.improve();
-  await flows.rewrite();
-  const s = store.getState();
-  assert.equal(s.session.versions.length, 3);
-  assert.equal(s.session.versions[2].source, "rewritten");
-  assert.ok(s.session.currentPrompt.objective.startsWith("Deliver "));
-});
-
-test("Confirm → Send → Delivered, then Copy and New Thought", async () => {
-  const { store, flows, delivered } = harness();
-  store.dispatch(act.updateInput("create a website"));
-  await flows.submitThought();
-  await flows.confirmAndSend();
-  assert.equal(store.getState().interaction, "delivered");
-  assert.equal(delivered.calls, 1);
-
-  await flows.copyPrompt();
-  assert.equal(delivered.copies.length, 1);
-  assert.ok(delivered.copies[0].includes("ROLE:"));
+  assert.equal(store.getState().inbox.thoughts.length, 1);
 
   flows.newThought();
   const s = store.getState();
   assert.equal(s.interaction, "idle");
   assert.equal(s.session, null);
   assert.equal(s.input, "");
+  assert.equal(s.inbox.thoughts.length, 1, "New Thought 不清空 Inbox");
 });
 
-test("AI error during improve → AI_ERROR, stays in review, prompt intact", async () => {
-  const { store, ai, flows } = harness();
-  store.dispatch(act.updateInput("create a website"));
-  await flows.submitThought();
-  const before = store.getState().session.currentPrompt;
-  ai.failNext();
-  await flows.improve();
-  const s = store.getState();
-  assert.equal(s.interaction, "review");
-  assert.equal(s.error.code, ERR.AI_ERROR);
-  assert.deepEqual(s.session.currentPrompt, before); // untouched
-});
-
-test("empty submit → EMPTY_INPUT, no session created", async () => {
+test("empty submit → EMPTY_INPUT, no inbox thought created", async () => {
   const { store, flows } = harness();
   await flows.submitThought();
   const s = store.getState();
   assert.equal(s.interaction, "idle");
   assert.equal(s.error.code, ERR.EMPTY_INPUT);
-  assert.equal(s.session, null);
+  assert.equal(s.inbox.thoughts.length, 0);
 });
 
 test("voice unavailable → VOICE_UNAVAILABLE error state, app alive", async () => {
@@ -125,13 +103,6 @@ test("voice unavailable → VOICE_UNAVAILABLE error state, app alive", async () 
   // still usable afterwards
   store.dispatch(act.updateInput("still works"));
   await flows.submitThought();
-  assert.equal(store.getState().interaction, "review");
-});
-
-test("session persisted to storage after structuring", async () => {
-  const { store, flows, saved } = harness();
-  store.dispatch(act.updateInput("create a website"));
-  await flows.submitThought();
-  assert.equal(saved.sessions.length, 1);
-  assert.equal(saved.sessions[0].rawThought, "create a website");
+  assert.equal(store.getState().interaction, "idle");
+  assert.equal(store.getState().inbox.thoughts.length, 1);
 });

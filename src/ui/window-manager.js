@@ -1,6 +1,10 @@
 /* WindowManager — owns window pixels: drag, magnetic snap, boot animation,
    position persistence, viewport clamping. Dispatches window actions;
-   reacts to state.window changes. */
+   reacts to state.window changes.
+
+   PHASE 3D RC1: the minimized bubble is now the branded PromptKey Orb —
+   it drags, snaps to the NEAREST screen edge on release, and persists its
+   own dock position ({x,y,dock}) independently of the main Float. */
 
 import { act } from "../state/actions.js";
 
@@ -8,12 +12,17 @@ export function createWindowManager({ refs, store, storage, win }) {
   const w = win || window;
   const SNAP = 24;
   const PAD = 8;
+  const ORB = 56; // PromptKey Orb size (48 on ≤700px — clamp slack is fine)
   let pos = null; // {x,y} while expanded
+  let orbPos = null; // {x,y,dock} PromptKey Orb
 
   const clamp = (x, y, ww, hh) => ({
     x: Math.max(PAD, Math.min(x, Math.max(PAD, w.innerWidth - ww - PAD))),
     y: Math.max(PAD, Math.min(y, Math.max(PAD, w.innerHeight - hh - PAD)))
   });
+
+  /* ---- PromptKey Orb: clamp inside viewport (56px box) ---- */
+  const clampOrb = (x, y) => clamp(x, y, ORB, ORB);
 
   function applyPos(p) {
     const rect = refs.float.getBoundingClientRect();
@@ -31,6 +40,26 @@ export function createWindowManager({ refs, store, storage, win }) {
 
   async function persist() {
     if (pos) await storage.savePosition({ x: pos.x, y: pos.y, state: store.getState().window });
+  }
+
+  async function persistOrb() {
+    if (orbPos) await storage.saveOrbPosition(orbPos);
+  }
+
+  function applyOrbPos(p) {
+    orbPos = { ...clampOrb(p.x, p.y), dock: p.dock || (orbPos && orbPos.dock) || "right" };
+    refs.minimized.style.left = orbPos.x + "px";
+    refs.minimized.style.top = orbPos.y + "px";
+  }
+
+  /* ---- Orb: snap to the NEAREST screen edge (user never needs to aim) ---- */
+  function snapOrbToEdge(x, y) {
+    const dL = x, dR = w.innerWidth - (x + ORB), dT = y, dB = w.innerHeight - (y + ORB);
+    const min = Math.min(dL, dR, dT, dB);
+    if (min === dL) return { x: SNAP, y, dock: "left" };
+    if (min === dR) return { x: w.innerWidth - ORB - SNAP, y, dock: "right" };
+    if (min === dT) return { x, y: SNAP, dock: "top" };
+    return { x, y: w.innerHeight - ORB - SNAP, dock: "bottom" };
   }
 
   /* ---- boot animation: dot → bar → surface → workspace → controls ---- */
@@ -60,10 +89,14 @@ export function createWindowManager({ refs, store, storage, win }) {
         applyPos(pos); // restore keeps pixels & content
       }
     }
-    if (state.window === "minimized" && pos) {
-      const c = clamp(pos.x, pos.y, 64, 64);
-      refs.minimized.style.left = c.x + "px";
-      refs.minimized.style.top = c.y + "px";
+    if (state.window === "minimized") {
+      if (orbPos) {
+        applyOrbPos(orbPos); // remembered dock position (PHASE 3D)
+      } else if (pos) {
+        // first minimize: derive from the Float position, then persist
+        applyOrbPos(clamp(pos.x, pos.y, ORB, ORB));
+        persistOrb();
+      }
     }
     persist();
   }
@@ -121,6 +154,18 @@ export function createWindowManager({ refs, store, storage, win }) {
     setTimeout(() => refs.float.classList.remove("pk-snapping"), 240);
   }
 
+  /* ---- PromptKey Orb: release → animated snap to nearest edge + persist ---- */
+  function snapOrbAndPersist() {
+    const r = refs.minimized.getBoundingClientRect();
+    const snapped = snapOrbToEdge(r.left, r.top);
+    refs.minimized.classList.add("pk-orb-snapping");
+    refs.minimized.style.left = snapped.x + "px";
+    refs.minimized.style.top = snapped.y + "px";
+    orbPos = snapped;
+    setTimeout(() => refs.minimized.classList.remove("pk-orb-snapping"), 260);
+    persistOrb();
+  }
+
   function init() {
     makeDraggable(refs.dragHandle, refs.float, {
       onStart: () => { refs.float.classList.add("pk-dragging"); refs.float.classList.remove("pk-snapping"); },
@@ -132,10 +177,21 @@ export function createWindowManager({ refs, store, storage, win }) {
       }
     });
     makeDraggable(refs.minimized, refs.minimized, {
-      onMove: () => { refs.minimized.dataset.moved = "1"; }
+      onStart: () => { refs.minimized.classList.remove("pk-orb-snapping"); },
+      onMove: () => { refs.minimized.dataset.moved = "1"; },
+      onEnd: (moved) => {
+        // 拖动结束（有位移）才吸附 + 持久化；纯点击不改变位置
+        if (moved) snapOrbAndPersist();
+      }
+    });
+    /* PHASE 3D: restore the remembered Orb dock position (clamped to the
+       current viewport — window may have resized since it was saved). */
+    storage.loadOrbPosition().then((saved) => {
+      if (saved) applyOrbPos(saved);
     });
     w.addEventListener("resize", () => {
       if (["expanded", "focus"].includes(store.getState().window) && pos) applyPos(pos);
+      if (orbPos) applyOrbPos(orbPos); // orb never gets lost off-screen
     });
   }
 

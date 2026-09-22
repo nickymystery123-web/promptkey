@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 import { createStore } from "../src/state/store.js";
 import { act, ERR } from "../src/state/actions.js";
 import { createFlows } from "../src/flows/prompt-flow.js";
-import { activePrompt, activePromptText, customButtonsEnabled } from "../src/state/selectors.js";
+
 import { createBrowserSpeechProvider } from "../src/services/voice/browser-provider.js";
 import { assertVoiceService } from "../src/services/voice/interface.js";
 
@@ -193,43 +193,38 @@ test("F: cancel before final discards transcript, restores draft, never calls AI
   assert.equal(h.ai.calls.analyze, 0);
 });
 
-/* ============ G. Cancel after a submitted analysis ============ */
-test("G: cancelling a pending Composer-submitted analysis kills the request (stale response ignored)", async () => {
+/* ============ G. Cancel after a pending REFINE ============ */
+test("G: cancelling a pending REFINE kills the request (stale response ignored)", async () => {
   const h = harness();
-  h.store.dispatch(act.inboxAddRefined("create a landing page", "text"));
-  const id = h.store.getState().inbox.thoughts[0].id;
-  await h.flows.sendThoughtToPrompt(id); // USE: take back into the Composer
-  assert.equal(h.store.getState().input, "create a landing page");
-  assert.equal(h.store.getState().interaction, "input"); // no auto-submit
+  h.store.dispatch(act.updateInput("create a landing page"));
   h.ai.hangNext();
-  h.flows.submitThought(); // user manually submits → analysis hangs
+  const refinePromise = h.flows.refineFromComposer(); // REFINE hangs
   await tick();
-  assert.equal(h.store.getState().interaction, "understanding");
+  assert.equal(h.store.getState().refinePending, true, "REFINE 进行中");
   assert.equal(h.ai.calls.analyze, 1);
 
   h.flows.newThought(); // user abandons this prompt
   const s = h.store.getState();
   assert.equal(s.interaction, "idle");
-  assert.equal(s.session, null);
+  assert.equal(s.input, "", "Composer 被清空");
   assert.equal(h.ai.lastSignal.aborted, true);
 
   // late response arrives → must be ignored completely
   h.ai.releaseNext();
+  await refinePromise;
   await tick();
   const s2 = h.store.getState();
   assert.equal(s2.interaction, "idle");
-  assert.equal(s2.session, null);
-  assert.equal(s2.inbox.thoughts.length, 1); // inbox survived the cancel
+  assert.equal(s2.refinePending, false);
+  assert.equal(s2.inbox.thoughts.length, 0, "取消后无 Thought 入箱");
 });
 
-/* ============ H. Abort pending request ============ */
-test("H: pending Composer-submitted analyze receives a real AbortSignal that aborts on cancel", async () => {
+/* ============ H. Abort pending REFINE request ============ */
+test("H: pending REFINE receives a real AbortSignal that aborts on newThought", async () => {
   const h = harness();
-  h.store.dispatch(act.inboxAddRefined("anything", "text"));
-  const id = h.store.getState().inbox.thoughts[0].id;
-  await h.flows.sendThoughtToPrompt(id); // USE
+  h.store.dispatch(act.updateInput("anything"));
   h.ai.hangNext();
-  h.flows.submitThought();
+  h.flows.refineFromComposer();
   await tick();
   assert.ok(h.ai.lastSignal instanceof AbortSignal);
   assert.equal(h.ai.lastSignal.aborted, false);
@@ -239,19 +234,16 @@ test("H: pending Composer-submitted analyze receives a real AbortSignal that abo
   await tick();
 });
 
-/* ============ I. Stale response ignored (A cancelled → B starts → A arrives late) ============ */
-test("I: stale response from cancelled session A never pollutes session B", async () => {
+/* ============ I. Stale response ignored (REFINE A cancelled → REFINE B starts → A arrives late) ============ */
+test("I: stale response from cancelled REFINE A never pollutes REFINE B", async () => {
   const h = harness();
-  h.store.dispatch(act.inboxAddRefined("thought A", "text"));
-  h.store.dispatch(act.inboxAddRefined("thought B", "text"));
-  const [a, b] = h.store.getState().inbox.thoughts;
 
-  // --- A: USE → manual submit, hangs ---
-  await h.flows.sendThoughtToPrompt(a.id);
+  // --- A: REFINE "thought A", hangs ---
+  h.store.dispatch(act.updateInput("thought A"));
   h.ai.hangNext();
-  h.flows.submitThought();
+  const refineA = h.flows.refineFromComposer();
   await tick();
-  assert.equal(h.store.getState().interaction, "understanding");
+  assert.equal(h.store.getState().refinePending, true);
   const signalA = h.ai.lastSignal;
 
   // --- user cancels A, starts B ---
@@ -259,25 +251,34 @@ test("I: stale response from cancelled session A never pollutes session B", asyn
   assert.equal(h.store.getState().interaction, "idle");
   assert.equal(signalA.aborted, true);
 
-  await h.flows.sendThoughtToPrompt(b.id);
+  h.store.dispatch(act.updateInput("thought B"));
   h.ai.hangNext();
-  h.flows.submitThought(); // B hangs
+  const refineB = h.flows.refineFromComposer(); // B hangs
   await tick();
   assert.equal(h.ai.calls.analyze, 2);
 
   // --- A's response finally arrives (provider ignored the abort signal) ---
   h.ai.releaseNext();
+  await refineA;
   await tick();
-  assert.equal(h.store.getState().interaction, "understanding"); // B still pending
+  assert.equal(h.store.getState().refinePending, true, "B still pending");
+  assert.equal(h.store.getState().inbox.thoughts.length, 0, "A's stale response ignored");
 
   // --- B completes ---
   h.ai.releaseNext();
+  await refineB;
+  await tick();
+  assert.equal(h.store.getState().refinePending, false);
+  assert.equal(h.store.getState().input, "OPTIMIZED ▸ thought B", "REFINE B 写 Composer");
+  assert.equal(h.store.getState().inbox.thoughts.length, 0, "REFINE 本身不入箱");
+
+  await h.flows.submitThought();
   await tick();
   const s = h.store.getState();
-  assert.equal(s.interaction, "review");
-  assert.equal(s.session.rawThought, "thought B");
-  assert.equal(s.session.versions.length, 1);
-  assert.match(s.session.currentPrompt.objective, /thought B/);
+  assert.equal(s.input, "");
+  assert.equal(s.inbox.thoughts.length, 1);
+  assert.equal(s.inbox.thoughts[0].originalText, "thought B");
+  assert.match(s.inbox.thoughts[0].refinedText, /thought B/);
 });
 
 /* ============ J. Browser unsupported ============ */
@@ -334,104 +335,14 @@ test("N: after voice error, typing still works end-to-end", async () => {
   h.store.dispatch(act.updateInput("write a marketing email"));
   await h.flows.submitThought();
   await tick();
-  assert.equal(h.store.getState().interaction, "review");
-  assert.equal(h.ai.calls.analyze, 1);
-  assert.equal(h.ai.lastOptions.inputSource, "text");
+  // 3E 简化：SUBMIT 不再走 understanding → review 管线，直接入箱
+  assert.equal(h.store.getState().interaction, "idle");
+  assert.equal(h.store.getState().inbox.thoughts.length, 1);
+  assert.equal(h.store.getState().inbox.thoughts[0].originalText, "write a marketing email");
+  assert.equal(h.ai.calls.analyze, 0, "SUBMIT 不调用 AI");
 });
 
-/* ============ O. Original selection (reached via USE + manual submit) ============ */
-test("O: Use Original → active prompt is the user's exact words (deliver + copy byte-for-byte)", async () => {
-  const h = harness();
-  const raw = "帮我把 deep seek 的页面弄高级一点";
-  h.store.dispatch(act.inboxAddRefined(raw, "voice")); // a voice-origin thought from the inbox
-  const id = h.store.getState().inbox.thoughts[0].id;
-  await h.flows.sendThoughtToPrompt(id); // USE: take back into the Composer
-  assert.equal(h.store.getState().interaction, "input"); // no auto-submit
-  assert.equal(h.store.getState().input, raw);
-  await h.flows.submitThought(); // manual submit → pipeline
-  await tick();
-  assert.equal(h.store.getState().interaction, "review");
-  assert.equal(h.ai.lastOptions.inputSource, "voice"); // origin flows through the pipeline
 
-  h.store.dispatch(act.useOriginal());
-  const s = h.store.getState();
-  assert.equal(s.session.selection, "original");
-  assert.equal(activePromptText(s), raw); // byte-for-byte
-  assert.equal(activePrompt(s).objective, raw);
-  assert.equal(customButtonsEnabled(s), false); // C1/C2 transform optimized only
-
-  await h.flows.copyPrompt();
-  assert.equal(h.delivered.copies[0], raw); // copy is exact, no "OBJECTIVE:" prefix
-
-  await h.flows.confirmAndSend();
-  await tick();
-  assert.equal(h.store.getState().interaction, "delivered");
-  assert.equal(h.delivered.prompts[0].objective, raw);
-});
-
-/* ============ P. Optimized selection (default) ============ */
-test("P: Optimized stays default; switching back from Original restores structured prompt", async () => {
-  const h = harness();
-  h.store.dispatch(act.inboxAddRefined("create a landing page", "text"));
-  const id = h.store.getState().inbox.thoughts[0].id;
-  await h.flows.sendThoughtToPrompt(id);
-  await h.flows.submitThought();
-  await tick();
-  let s = h.store.getState();
-  assert.equal(s.session.selection, "optimized"); // default recommendation
-
-  h.store.dispatch(act.useOriginal());
-  h.store.dispatch(act.useOptimized());
-  s = h.store.getState();
-  assert.equal(s.session.selection, "optimized");
-  assert.match(activePromptText(s), /ROLE:/);
-  assert.ok(customButtonsEnabled(s));
-});
-
-/* ============ Q. Edit selection ============ */
-test("Q: Edit works on the optimized version; editing is blocked while Original is selected", async () => {
-  const h = harness();
-  h.store.dispatch(act.inboxAddRefined("create a landing page", "text"));
-  const id = h.store.getState().inbox.thoughts[0].id;
-  await h.flows.sendThoughtToPrompt(id);
-  await h.flows.submitThought();
-  await tick();
-
-  // normal edit path on optimized
-  h.store.dispatch(act.startEdit());
-  assert.equal(h.store.getState().interaction, "editing");
-  h.store.dispatch(act.saveEdit("objective", "Edited objective"));
-  let s = h.store.getState();
-  assert.equal(s.interaction, "review");
-  assert.equal(s.session.versions.at(-1).source, "edited");
-  assert.equal(s.session.selection, "optimized");
-
-  // original selected → edit/improve/rewrite all blocked
-  h.store.dispatch(act.useOriginal());
-  h.store.dispatch(act.startEdit());
-  assert.equal(h.store.getState().interaction, "review"); // no-op
-  h.store.dispatch(act.improvePrompt());
-  assert.equal(h.store.getState().interaction, "review"); // no-op
-  assert.equal(h.ai.calls.improve, 0);
-});
-
-/* ============ R. Original remains byte-for-byte ============ */
-test("R: session.rawThought is byte-for-byte the user's input; Original view never reconstructs", async () => {
-  const h = harness();
-  const exact = "把 HT mail 页面改成深色, 别动 LOGO!!";
-  h.store.dispatch(act.inboxAddRefined(exact, "voice"));
-  const id = h.store.getState().inbox.thoughts[0].id;
-  await h.flows.sendThoughtToPrompt(id);
-  await h.flows.submitThought();
-  await tick();
-  const s = h.store.getState();
-  assert.equal(s.session.rawThought, exact); // stored exactly once, at submit
-  h.store.dispatch(act.useOriginal());
-  assert.equal(activePromptText(h.store.getState()), exact);
-  // original is never overwritten by optimized output
-  assert.notEqual(s.session.currentPrompt.objective, exact);
-  assert.equal(h.store.getState().session.rawThought, exact);
-});
 
 /* ============ machine-level: cancel transitions ============ */
 test("machine: VOICE_CANCEL only acts from listening/processing; restores pre-voice input", async () => {
@@ -486,7 +397,7 @@ test("provider: satisfies the VoiceService contract incl. abort()", () => {
   assert.equal(p.isAvailable(), true);
 });
 
-test("provider: maps not-allowed→VOICE_UNAVAILABLE, no-speech→VOICE_NO_SPEECH, swallows aborted", async () => {
+test("provider: maps not-allowed→VOICE_UNAVAILABLE; no-speech mid-loop is swallowed (graceful silence), aborted swallowed", async () => {
   const { win, instances } = fakeSpeechWindow();
   const p = createBrowserSpeechProvider(win);
   const errors = [];
@@ -494,10 +405,17 @@ test("provider: maps not-allowed→VOICE_UNAVAILABLE, no-speech→VOICE_NO_SPEEC
   await p.start();
   const rec = instances[0];
   rec.onerror({ error: "not-allowed" });
+  // A silent pause while the continuous loop is alive: onend auto-restarts,
+  // surfacing it as an error would flip the UI to error and drop the next
+  // segment's transcripts (3D-RC2 GATE A graceful-silence contract).
   rec.onerror({ error: "no-speech" });
   rec.onerror({ error: "audio-capture" });
   rec.onerror({ error: "aborted" }); // our own cancel noise — must not surface
-  assert.deepEqual(errors, ["VOICE_UNAVAILABLE", "VOICE_NO_SPEECH", "VOICE_ERROR"]);
+  assert.deepEqual(errors, ["VOICE_UNAVAILABLE", "VOICE_ERROR"]);
+  // no-speech only surfaces when the loop is actually terminating.
+  await p.stop();
+  rec.onerror({ error: "no-speech" });
+  assert.deepEqual(errors, ["VOICE_UNAVAILABLE", "VOICE_ERROR", "VOICE_NO_SPEECH"]);
 });
 
 test("provider: abort() aborts recognition; stop() stops it", async () => {

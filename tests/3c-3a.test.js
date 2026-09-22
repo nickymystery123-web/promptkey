@@ -249,10 +249,13 @@ test("USE-8 (STEP 11 组合验收): A + Voice B + USE C → A B\\n\\nC，层层�
 /* ==================================================================== *
  * 2. Thought Persistence (DECISION #2)                                 *
  * ==================================================================== */
-test("TP-1: REFINE → INBOX_ADD_REFINED 后自动持久化（无需手动调用）", async () => {
+test("TP-1: REFINE → SUBMIT 后自动持久化（无需手动调用）", async () => {
   const h = harness();
   h.store.dispatch(act.updateInput("my thought"));
   await h.flows.refineFromComposer();
+  await tick();
+  assert.equal(h.store.getState().input, "OPTIMIZED ▸ my thought", "REFINE 写 Composer");
+  await h.flows.submitThought();
   await tick();
   const persisted = await h.storage.loadInbox();
   assert.equal(persisted.length, 1);
@@ -360,7 +363,7 @@ test("TP-7: 存储结构畸形（非 Thought 的条目被丢弃，合法条目�
   assert.equal(list[0].originalText, "good");
 });
 
-test("TP-8: storage 完全不可用 → REFINE/编辑/删除不崩溃，会话内 Inbox 正常", async () => {
+test("TP-8: storage 完全不可用 → REFINE/SUBMIT/编辑/删除不崩溃，会话内 Inbox 正常", async () => {
   const ls = mockLS();
   ls.setItem = () => { throw new Error("quota"); };
   ls.getItem = () => { throw new Error("blocked"); };
@@ -368,10 +371,13 @@ test("TP-8: storage 完全不可用 → REFINE/编辑/删除不崩溃，会话�
   h.store.dispatch(act.updateInput("still works"));
   await h.flows.refineFromComposer();
   await tick();
-  assert.equal(inboxThoughts(h.store.getState()).length, 1, "REFINE 成功，Inbox 正常");
+  assert.equal(h.store.getState().input, "OPTIMIZED ▸ still works", "REFINE 成功写 Composer");
+  await h.flows.submitThought();
+  await tick();
+  assert.equal(inboxThoughts(h.store.getState()).length, 1, "SUBMIT 后 Inbox 正常");
   h.store.dispatch(act.inboxEdit(inboxThoughts(h.store.getState())[0].id, "edited"));
   assert.equal(inboxThoughts(h.store.getState())[0].originalText, "edited", "会话内编辑正常");
-  assert.equal(h.store.getState().input, "still works", "Composer 不受影响");
+  assert.equal(h.store.getState().input, "", "SUBMIT 成功后清空 Composer");
 });
 
 /* ==================================================================== *
@@ -417,33 +423,37 @@ test("DP-4: 刷新恢复 → 原始文本一字不差；不经 AI、不 REFINE�
   assert.equal(s.draftSaved, true, "恢复即 SAVED");
 });
 
-test("DP-5: Submit delivered 后清除 Draft；REFINE/Voice/USE/ADD 不清除", async () => {
+test("DP-5: SUBMIT 后清除 Draft；REFINE/Voice/USE 不清除", async () => {
   const h = harness();
-  // REFINE 保留
-  h.store.dispatch(act.updateInput("survives refine"));
+  // REFINE 成功后把优化结果写回 Composer，Draft 保存为优化后文本
+  h.store.dispatch(act.updateInput("refine me"));
   await h.flows.refineFromComposer();
   await h.flows.flushDraft();
-  assert.equal(await h.storage.loadDraft(), "survives refine", "REFINE 不清 Draft");
+  assert.equal(await h.storage.loadDraft(), "OPTIMIZED ▸ refine me", "REFINE 不清 Draft，保存优化结果");
+
   // Voice 保留（final append 也落盘）。Voice merge 用空格分隔符（machine 既有语义），
-  // 故 transcript 不带前导空格 → "survives refine plus voice"
+  // 故 transcript 不带前导空格 → "survives voice plus voice"
+  h.store.dispatch(act.updateInput("survives voice"));
   h.store.dispatch(act.startVoice());
   h.voice.emitTranscript("plus voice", true);
   h.store.dispatch(act.voiceEnded());
   await h.flows.flushDraft();
-  assert.equal(await h.storage.loadDraft(), "survives refine plus voice", "Voice 不清 Draft");
-  // USE 保留
-  const id = await seedThought(h, "idea", "USED");
+  assert.equal(await h.storage.loadDraft(), "survives voice plus voice", "Voice 不清 Draft");
+
+  // USE 保留；直接新建一条 Thought 来 USE
+  const id = await seedThought(h, "seed", "USED");
   await h.flows.sendThoughtToPrompt(id);
   await h.flows.flushDraft();
-  assert.equal(await h.storage.loadDraft(), "survives refine plus voice\n\nUSED", "USE 不清 Draft");
+  assert.equal(await h.storage.loadDraft(), "survives voice plus voice\n\nUSED", "USE 不清 Draft");
+
   // Submit 清除
   await h.flows.submitThought();
   await tick(20);
-  await h.flows.confirmAndSend();
-  await tick(20);
-  assert.equal(h.store.getState().interaction, "delivered");
-  assert.equal(await h.storage.loadDraft(), "", "delivered 后 Draft 清除");
+  assert.equal(h.store.getState().interaction, "idle", "3E SUBMIT 后直接回到 idle");
+  assert.equal(await h.storage.loadDraft(), "", "SUBMIT 后 Draft 清除");
   assert.ok(h.clears.draft >= 1, "clearDraft 被调用");
+  // inbox 现有 USE 来源的一条 + SUBMIT 产生的一条（REFINE 未直接入箱）
+  assert.equal(h.store.getState().inbox.thoughts.length, 2, "USE 来源与 SUBMIT 各入箱一条");
 });
 
 test("DP-6: NEW 明确清除 Draft（含未 debounce 的内容）", async () => {
@@ -720,25 +730,31 @@ test("AI-5: 模式经 onMode → store 的完整链路（DEMO 状态真实可见
 /* ==================================================================== *
  * 8. 交叉回归：核心链路不因持久化/历史而破坏                            *
  * ==================================================================== */
-test("X-1: REFINE 后 inbox 持久化 + Composer 保留 + Badge DRAFT", async () => {
+test("X-1: REFINE 后 Composer 保留优化结果 + Badge DRAFT · THOUGHT；SUBMIT 后入箱", async () => {
   const h = harness();
   h.store.dispatch(act.updateInput("refine me"));
   await h.flows.refineFromComposer();
   await tick();
-  const s = h.store.getState();
-  assert.equal(inboxThoughts(s).length, 1);
-  assert.equal(s.input, "refine me", "REFINE 不消费 Composer");
-  assert.equal(draftBadgeLabel(s), "DRAFT");
+  let s = h.store.getState();
+  assert.equal(inboxThoughts(s).length, 0, "REFINE 本身不入箱");
+  assert.equal(s.input, "OPTIMIZED ▸ refine me", "REFINE 成功后 Composer 保留优化结果");
+  assert.equal(draftBadgeLabel(s), "DRAFT · THOUGHT");
+  await h.flows.submitThought();
+  await tick();
+  s = h.store.getState();
+  assert.equal(inboxThoughts(s).length, 1, "SUBMIT 后入箱");
+  assert.equal(s.input, "", "SUBMIT 后清空 Composer");
 });
 
-test("X-2: UNDO 不触发 draft 保存之外的 AI；DELIVERED 后 UNDO 不可用", async () => {
+test("X-2: UNDO 不触发 draft 保存之外的 AI；SUBMIT 后 UNDO 恢复 Composer 草稿", async () => {
   const h = harness();
   h.store.dispatch(act.updateInput("full flow"));
   await h.flows.submitThought();
   await tick(20);
-  await h.flows.confirmAndSend();
-  await tick(20);
-  assert.equal(h.store.getState().interaction, "delivered");
+  assert.equal(h.store.getState().interaction, "idle", "3E SUBMIT 后回到 idle");
+  assert.equal(h.store.getState().inbox.thoughts.length, 1, "SUBMIT 已入箱");
+  // SUBMIT 是程序化写入并清空 Composer；Undo 一步可恢复原文
   h.store.dispatch(act.undoInput());
-  assert.equal(h.ai.calls.analyze, 1, "Undo 不产生 AI 调用");
+  assert.equal(h.store.getState().input, "full flow", "Undo 恢复 SUBMIT 前的 Composer 内容");
+  assert.equal(h.ai.calls.analyze, 0, "Undo 不产生 AI 调用");
 });

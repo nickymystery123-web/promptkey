@@ -12,11 +12,17 @@ export function createThought(text, source, now) {
   counter += 1;
   const t = now || Date.now();
   const ts = new Date(t).toISOString();
+  const originalText = typeof text === "string" ? text : "";
+  const len = [...originalText].length; // Unicode code points (matches <textarea> char count)
   return {
     id: "th-" + t.toString(36) + "-" + counter,
-    originalText: typeof text === "string" ? text : "",
+    originalText,
     refinedText: null, // set later by async refinement; never overwrites originalText
     source: source === "voice" ? "voice" : "text",
+    // 3C-3C P1 Long Thought MVP: true ⇒ promoted from Composer because the
+    // text exceeded COMPOSER_LIMIT. Users can still COPY / EDIT / USE it.
+    long: len > 2000,
+    chars: len,
     createdAt: ts,
     updatedAt: ts
   };
@@ -35,9 +41,13 @@ export function withRefinedText(thought, refinedText, now) {
    does not touch other thoughts, never triggers AI). */
 export function withOriginalText(thought, text, now) {
   if (!thought) return thought;
+  const originalText = typeof text === "string" ? text : "";
+  const len = [...originalText].length;
   return {
     ...thought,
-    originalText: typeof text === "string" ? text : "",
+    originalText,
+    long: len > 2000,
+    chars: len,
     updatedAt: new Date(now || Date.now()).toISOString()
   };
 }

@@ -120,16 +120,17 @@ test("A1: canRefine — 空输入/纯空白 false；processing/voice 活动 fals
   assert.equal(canRefine(store.getState()), false, "voice listening 时不可 REFINE");
   store.dispatch(act.voiceEnded());
 
-  store.dispatch(act.submitThought()); // understanding 阻止 REFINE
-  assert.equal(store.getState().interaction, "understanding");
-  assert.equal(canRefine(store.getState()), false, "understanding 时不可 REFINE");
+  // 3E: SUBMIT now goes straight to Inbox, interaction stays idle.
+  store.dispatch(act.submitThought());
+  assert.equal(store.getState().interaction, "idle");
+  assert.equal(canRefine(store.getState()), false, "empty Composer after submit 不可 REFINE");
 
   store.dispatch(act.reset());
   store.dispatch(act.updateInput("  "));
   assert.equal(canRefine(store.getState()), false, "纯空白不可 REFINE");
 });
 
-test("A2: canConfirm — review true；input+文本 true；空 false；delivered false", async () => {
+test("A2: canConfirm — input+文本 true；空 false；refinePending false", async () => {
   const h = harness();
   assert.equal(canConfirm(h.store.getState()), false, "空 Composer 不可 SUBMIT");
   h.store.dispatch(act.updateInput("hello"));
@@ -139,12 +140,10 @@ test("A2: canConfirm — review true；input+文本 true；空 false；delivered
   h.store.dispatch(act.updateInput("hello"));
   await h.flows.submitThought();
   await tick();
-  assert.equal(h.store.getState().interaction, "review");
-  assert.equal(canConfirm(h.store.getState()), true, "review 态可 SUBMIT");
-  await h.flows.confirmAndSend();
-  await tick();
-  assert.equal(h.store.getState().interaction, "delivered");
-  assert.equal(canConfirm(h.store.getState()), false, "delivered 不可重复 SUBMIT");
+  // 3E: SUBMIT goes straight to Inbox, Composer clears, interaction stays idle.
+  assert.equal(h.store.getState().interaction, "idle");
+  assert.equal(h.store.getState().inbox.thoughts.length, 1, "SUBMIT 后入箱");
+  assert.equal(canConfirm(h.store.getState()), false, "空 Composer 后不可 SUBMIT");
 });
 
 /* ==================== B. USE append 行为（3C-3A DECISION #1） ====================
@@ -330,10 +329,18 @@ function fakeEl(tag = "div") {
     setSelectionRange() {},
     get textContent() { return this._text; },
     set textContent(v) { this._text = v; this._children = []; }, // 赋值即清空子节点（真实 DOM 语义）
-    append(...kids) { kids.forEach((k) => { if (typeof k === "string") this._text += k; else this._children.push(k); }); },
-    appendChild(k) { this._children.push(k); return k; },
+    append(...kids) { kids.forEach((k) => { if (typeof k === "string") this._text += k; else { k._parent = this; this._children.push(k); } }); },
+    appendChild(k) { k._parent = this; this._children.push(k); return k; },
     querySelector(sel) { return allOf(this).find((n) => n !== el && matchSel(n, sel)) || null; },
     querySelectorAll(sel) { return allOf(this).filter((n) => n !== el && matchSel(n, sel)); },
+    closest(sel) {
+      let node = this;
+      while (node) {
+        if (matchSel(node, sel)) return node;
+        node = node._parent || null;
+      }
+      return null;
+    },
     replaceWith() {},
     contains() { return false; }
   };
@@ -378,14 +385,13 @@ test("D1: 编辑某 Thought 时，触发会改变 listKey 的无关渲染不得�
   renderer.render(store.getState(), store.getState());
   assert.equal(refs.inbox._listKey !== null && refs.inbox._listKey.length > 0, true, "列表已构建");
 
-  // 找到第一张卡片并点击 EDIT 按钮（进入编辑态）
+  // 找到第一张卡片并点击正文文本（3E 点文即编，EDIT 按钮已退役）
   const cards = refs.inboxList.querySelectorAll(".pk-thought");
   assert.equal(cards.length, 2);
-  const actions = cards[0].querySelector(".pk-thought-actions");
-  const editBtn = actions.querySelectorAll("button").find((b) => b.textContent === "EDIT");
-  assert.ok(editBtn, "EDIT 按钮存在");
+  const body = cards[0].querySelector(".pk-thought-body");
+  assert.ok(body, "正文文本元素存在（点文即编入口）");
   const listKeyBefore = refs.inbox._listKey;
-  editBtn._listeners.click.forEach((fn) => fn({ key: "", preventDefault() {}, stopPropagation() {} }));
+  body._listeners.click.forEach((fn) => fn({ key: "", preventDefault() {}, stopPropagation() {} }));
 
   // 编辑中：触发一个会改变 listKey 的动作（展开）+ 无关 render → 不得重建
   store.dispatch(act.inboxToggleExpanded(one.id));
@@ -421,8 +427,8 @@ test("D2: 编辑保存（INBOX_EDIT）后列表重建且内容更新；DELETE �
   // 卡片内容反映编辑结果
   const cards = refs.inboxList.querySelectorAll(".pk-thought");
   assert.equal(cards.length, 1);
-  const original = cards[0].querySelector(".pk-thought-original");
-  assert.equal(original.textContent, "idea one edited");
+  const body = cards[0].querySelector(".pk-thought-body");
+  assert.equal(body.textContent, "idea one edited");
 
   // 删除 → 列表清空（重建为空态）
   store.dispatch(act.inboxDelete(id));
@@ -432,7 +438,7 @@ test("D2: 编辑保存（INBOX_EDIT）后列表重建且内容更新；DELETE �
 });
 
 /* ==================== E. REFINE 唯一入箱（流程级） ==================== */
-test("E1: 普通 Composer 输入绝不直接入箱；仅 REFINE 成功后入箱（original/refined 分离）", async () => {
+test("E1: 普通 Composer 输入绝不直接入箱；REFINE 写入 Composer，SUBMIT 后入箱（original/refined 分离）", async () => {
   const h = harness();
   h.store.dispatch(act.updateInput("just typing"));
   await tick();
@@ -440,13 +446,18 @@ test("E1: 普通 Composer 输入绝不直接入箱；仅 REFINE 成功后入箱�
   assert.equal(h.ai.calls.analyze, 0, "打字不触发 AI");
   await h.flows.refineFromComposer();
   await tick();
-  const s = h.store.getState();
-  assert.equal(s.inbox.thoughts.length, 1, "REFINE 后入箱");
+  let s = h.store.getState();
+  assert.equal(s.inbox.thoughts.length, 0, "REFINE 本身不入箱");
+  assert.equal(s.input, "OPTIMIZED ▸ just typing", "REFINE 把优化结果写回 Composer");
   assert.equal(h.ai.calls.analyze, 1);
+  await h.flows.submitThought();
+  await tick();
+  s = h.store.getState();
+  assert.equal(s.inbox.thoughts.length, 1, "SUBMIT 后入箱");
   const t = s.inbox.thoughts[0];
   assert.equal(t.originalText, "just typing", "originalText=用户原话");
   assert.equal(t.refinedText, "OPTIMIZED ▸ just typing", "refinedText=AI 产物");
-  assert.equal(s.input, "just typing", "REFINE 不消费 Composer 内容");
+  assert.equal(s.input, "", "SUBMIT 成功后清空 Composer");
 });
 
 test("E2: voice 活动期间 REFINE 被拒绝（不中途 refine）；结束后可正常 refine", async () => {
@@ -462,7 +473,7 @@ test("E2: voice 活动期间 REFINE 被拒绝（不中途 refine）；结束后�
   await tick();
   await h.flows.refineFromComposer();
   await tick();
-  assert.equal(h.store.getState().inbox.thoughts.length, 1, "voice 结束后 REFINE 正常");
+  assert.equal(h.store.getState().input, "OPTIMIZED ▸ idea", "voice 结束后 REFINE 写 Composer");
   assert.equal(h.ai.calls.analyze, 1);
 });
 

@@ -37,9 +37,10 @@ export const SEND_PROMPT = "SEND_PROMPT";         // ready_to_send → sending
 export const DELIVERY_COMPLETE = "DELIVERY_COMPLETE";
 
 // Voice
+export const COMPOSER_LIMIT = 2000; // canonical single definition — shared by DOM maxlength, machine writes, Voice overflow. §14 code-quality.
 export const START_VOICE = "START_VOICE";
 export const STOP_VOICE = "STOP_VOICE";
-export const VOICE_TRANSCRIPT = "VOICE_TRANSCRIPT"; // payload: { text, isFinal }
+export const VOICE_TRANSCRIPT = "VOICE_TRANSCRIPT"; // payload: { text, isFinal, seq }
 export const VOICE_DONE = "VOICE_DONE";
 export const VOICE_ERROR = "VOICE_ERROR";           // payload: { code }
 export const VOICE_CANCEL = "VOICE_CANCEL";         // user abandons voice input (≠ stop/done)
@@ -73,6 +74,15 @@ export const USE_OPTIMIZED = "USE_OPTIMIZED";
 // Result actions
 export const COPY_PROMPT = "COPY_PROMPT";
 export const NEW_THOUGHT = "NEW_THOUGHT";
+
+// REFINE loading state (3C-3C §P1). Explicit signal separated from voice/AI,
+// so REFINE UX can show a small breathing icon without reusing a text loader.
+export const REFINE_PENDING = "REFINE_PENDING";     // payload: { value: true|false }
+
+// 3E: REFINE now writes the optimized result back into the Composer instead of
+// creating a Thought directly. The original source is preserved so that SUBMIT
+// can store an original/refined pair in the Inbox.
+export const REFINE_RESULT = "REFINE_RESULT";       // payload: { original, refined }
 
 // Feedback / errors
 export const SHOW_MESSAGE = "SHOW_MESSAGE"; // payload: { text }
@@ -120,7 +130,7 @@ export const act = {
   deliveryComplete: () => ({ type: DELIVERY_COMPLETE }),
   startVoice: () => ({ type: START_VOICE }),
   stopVoice: () => ({ type: STOP_VOICE }),
-  voiceTranscript: (text, isFinal) => ({ type: VOICE_TRANSCRIPT, text, isFinal }),
+  voiceTranscript: (text, isFinal, seq) => ({ type: VOICE_TRANSCRIPT, text, isFinal, seq: seq == null ? 0 : Number(seq) >>> 0 }),
   voiceDone: () => ({ type: VOICE_DONE }),
   voiceError: (code) => ({ type: VOICE_ERROR, code }),
   cancelVoice: () => ({ type: VOICE_CANCEL }),
@@ -144,6 +154,8 @@ export const act = {
   useOptimized: () => ({ type: USE_OPTIMIZED }),
   copyPrompt: () => ({ type: COPY_PROMPT }),
   newThought: () => ({ type: NEW_THOUGHT }),
+  refinePending: (v) => ({ type: REFINE_PENDING, value: !!v }),
+  refineResult: (original, refined) => ({ type: REFINE_RESULT, original, refined }),
   showMessage: (text) => ({ type: SHOW_MESSAGE, text }),
   showToast: (text) => ({ type: SHOW_TOAST, text }),
   error: (code, message) => ({ type: ERROR, code, message }),

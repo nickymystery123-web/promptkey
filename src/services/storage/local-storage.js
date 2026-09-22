@@ -21,6 +21,7 @@
    Future: BackendStorage / Database / Cloud Sync — core logic unchanged. */
 
 const POS_KEY = "pk-float:position";
+const ORB_POS_KEY = "pk-float:orb-pos"; // PHASE 3D: PromptKey Orb 位置持久化 {x,y,dock}
 const SESSION_KEY = "pk-float:session:";
 const INBOX_KEY = "pk-float:inbox";
 const DRAFT_KEY = "pk-float:draft";
@@ -78,6 +79,23 @@ export function createLocalStorageService(store) {
       try {
         const p = JSON.parse(raw);
         return typeof p.x === "number" && typeof p.y === "number" ? p : null;
+      } catch (e) { return null; }
+    },
+    /* ---- PromptKey Orb position persistence (PHASE 3D RC1) ----
+       { x, y, dock } · dock ∈ left|right|top|bottom — validated on load,
+       corrupt entries degrade to null (fresh default position). */
+    async saveOrbPosition(pos) {
+      if (!pos || typeof pos.x !== "number" || typeof pos.y !== "number") return;
+      safeSet(ORB_POS_KEY, JSON.stringify(pos));
+    },
+    async loadOrbPosition() {
+      const raw = safeGet(ORB_POS_KEY);
+      if (!raw) return null;
+      try {
+        const p = JSON.parse(raw);
+        if (typeof p.x !== "number" || typeof p.y !== "number") return null;
+        const dock = ["left", "right", "top", "bottom"].includes(p.dock) ? p.dock : "right";
+        return { x: p.x, y: p.y, dock };
       } catch (e) { return null; }
     },
     /* ---- Creative Inbox persistence (3C-3A §4) ---- */

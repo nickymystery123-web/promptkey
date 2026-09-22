@@ -70,9 +70,12 @@ button{font-family:inherit;cursor:pointer}
 .site-footer a{color:inherit}
 
 /* ================= PromptKey Float Window ================= */
+/* 3D-RC2 GATE D 置顶: Float/Orb live at the top of the page's stacking
+   order (below the 2^31-1 cap) so no other in-page layer can cover the
+   surface while any feature is open. The toast sits one notch above. */
 #pk-float{
-  position:fixed;z-index:9999;
-  width:620px;height:580px;max-height:calc(100vh - 32px);
+  position:fixed;z-index:2147483000;
+  width:620px;height:640px;max-height:calc(100vh - 32px);
   left:0;top:0;
   background:var(--pk-surface);
   border:1px solid var(--pk-border);
@@ -81,19 +84,24 @@ button{font-family:inherit;cursor:pointer}
   display:flex;flex-direction:column;
   overflow:hidden;
   font-family:var(--pk-sans);
-  transition:box-shadow .22s var(--pk-ease);
+  transition:opacity .28s var(--pk-ease),transform .28s var(--pk-ease),box-shadow .22s var(--pk-ease);
   will-change:transform,left,top;
 }
 #pk-float[data-window="hidden"]{display:none}
+/* 3E GATE C: minimizing collapses the Float into the Orb with a smooth scale/fade. */
+#pk-float[data-window="minimized"]{
+  opacity:0;pointer-events:none;transform:scale(.78);
+  transition:opacity .28s var(--pk-ease),transform .28s var(--pk-ease),box-shadow .28s var(--pk-ease);
+}
 #pk-float.pk-dragging{transform:scale(.985);box-shadow:var(--pk-shadow-hover);transition:none}
-#pk-float.pk-snapping{transition:left .22s var(--pk-ease),top .22s var(--pk-ease),box-shadow .22s var(--pk-ease)}
+#pk-float.pk-snapping{transition:left .22s var(--pk-ease),top .22s var(--pk-ease),box-shadow .22s var(--pk-ease),opacity .22s var(--pk-ease),transform .22s var(--pk-ease)}
 #pk-float:hover{box-shadow:var(--pk-shadow-hover)}
 
 /* Boot animation stages (JS toggles .pk-boot-N) */
 #pk-float.pk-boot{transform-origin:100% 100%}
 #pk-float.pk-boot .pk-system-bar{opacity:0;transform:scaleX(.06);transform-origin:left center}
 #pk-float.pk-boot .pk-workspace{opacity:0}
-#pk-float.pk-boot .pk-controls,#pk-float.pk-boot .pk-brand-foot{opacity:0;transform:translateY(8px)}
+#pk-float.pk-boot .pk-controls{opacity:0;transform:translateY(8px)}
 #pk-float.pk-boot{opacity:0;transform:scale(.12)}
 #pk-float.pk-boot-1{opacity:1;transform:scale(.12)}
 #pk-float.pk-boot-2{opacity:1;transform:scale(.16,0.10)}
@@ -164,10 +172,6 @@ button{font-family:inherit;cursor:pointer}
 
 .pk-idle-q{font-size:22px;font-weight:680;letter-spacing:-.01em;line-height:1.35;margin:6px 0 10px}
 .pk-idle-hint{color:var(--pk-text-secondary);font-size:14px;margin:0 0 auto}
-.pk-idle-meta{font-family:var(--pk-mono);font-size:10px;letter-spacing:.16em;color:var(--pk-text-secondary);margin:14px 0 4px}
-.pk-cursor-line{font-family:var(--pk-mono);font-size:10px;letter-spacing:.16em;color:var(--pk-text-secondary);margin:0;display:flex;align-items:center;gap:6px}
-.pk-caret{color:var(--pk-text-primary);animation:pk-blink 1.1s steps(2) infinite}
-@keyframes pk-blink{50%{opacity:0}}
 
 .pk-view-label{font-family:var(--pk-mono);font-size:10px;letter-spacing:.16em;color:var(--pk-text-secondary);margin:0 0 10px;flex:none}
 
@@ -208,6 +212,22 @@ button{font-family:inherit;cursor:pointer}
 }
 .pk-input-area::placeholder{color:var(--pk-text-secondary);opacity:.7}
 #pk-float[data-status="listening"] .pk-input-area{color:var(--pk-text-primary)}
+/* 3D-RC2 GATE B 边说边浮现: while LISTENING the Composer mirrors the live
+   voice preview — committed words solid, interim tail softly lit. The area is
+   display-only (readOnly), so the non-intrusive cue replaces typing focus. */
+.pk-input-area.pk-voice-live{
+  color:var(--pk-text-primary);
+  caret-color:rgba(120,90,255,.9);
+  text-shadow:0 0 14px rgba(120,90,255,.14);
+}
+
+/* 3E paper-suck: Composer text pulled into the Inbox on SUBMIT. */
+.pk-input-area.pk-submit-suck{animation:pk-submit-suck .42s var(--pk-ease)}
+@keyframes pk-submit-suck{
+  0%{opacity:1;transform:scale(1) translateY(0)}
+  40%{opacity:.7;transform:scale(.97) translateY(6px)}
+  100%{opacity:1;transform:scale(1) translateY(0)}
+}
 
 /* Live voice transcript preview (Phase 3C-1) */
 .pk-transcript{
@@ -224,6 +244,9 @@ button{font-family:inherit;cursor:pointer}
 }
 .pk-transcript-cancel:hover{color:var(--pk-text-primary);border-color:var(--pk-text-primary)}
 .pk-transcript-text{margin:0;font-size:14.5px;line-height:1.55;color:var(--pk-text-primary);white-space:pre-wrap;word-break:break-word}
+/* GATE B: hidden while LISTENING (the Composer carries the live words);
+   reappears during PROCESSING as the final recap. */
+.pk-transcript-text[hidden]{display:none}
 .pk-transcript-text.interim{color:var(--pk-text-secondary);font-style:italic}
 .pk-transcript-text.empty{color:var(--pk-text-secondary);opacity:.7;font-style:normal}
 
@@ -293,26 +316,28 @@ button{font-family:inherit;cursor:pointer}
 .pk-text-action:hover{border-bottom-color:var(--pk-text-primary)}
 .pk-dot-sep{color:var(--pk-text-secondary);margin:0 10px}
 
-/* ================= Creative Inbox (Phase 3C-2A) ================= */
-/* Always-present idea memory inside the workspace. Never blocks the prompt
-   session, never calls AI on capture. Textarea + thoughts list. */
+/* ================= Creative Inbox (3C-3B reset) ================= */
+/* One of the TWO dominant content surfaces. Always-present, expanded by
+   default, content-first: Thoughts get the space; chrome stays compact.
+   Own internal scroll — never pushes the Composer out (§14 scroll contract). */
 .pk-inbox{
-  flex:0 1 auto;margin-bottom:10px;border:1px solid var(--pk-border);
+  flex:0 1 auto;margin-bottom:12px;border:1px solid var(--pk-border);
   border-radius:16px;background:var(--pk-surface);
   box-shadow:inset 0 1px 0 var(--pk-highlight), var(--pk-shadow-soft);
   overflow:hidden;
-  max-height:55%;
+  min-height:0;max-height:52%;
   display:flex;flex-direction:column;
 }
-.pk-inbox-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pk-inbox-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none}
 .pk-inbox-toggle{
   appearance:none;border:0;background:transparent;cursor:pointer;
   flex:1;min-width:0;display:flex;align-items:center;gap:8px;
-  padding:11px 14px;text-align:left;color:var(--pk-text-primary);
+  padding:9px 14px;text-align:left;color:var(--pk-text-primary);
+  min-height:36px;
 }
-.pk-inbox-caret{font-size:11px;color:var(--pk-text-secondary);transition:transform .22s var(--pk-ease);line-height:1}
+.pk-inbox-caret{font-size:10px;color:var(--pk-text-secondary);transition:transform .22s var(--pk-ease);line-height:1}
 .pk-inbox[data-open="1"] .pk-inbox-caret{transform:rotate(90deg)}
-.pk-inbox-title{font-family:var(--pk-mono);font-size:10px;letter-spacing:.16em;color:var(--pk-text-primary)}
+.pk-inbox-title{font-family:var(--pk-mono);font-size:10.5px;letter-spacing:.16em;color:var(--pk-text-primary)}
 .pk-inbox-count{
   font-family:var(--pk-mono);font-size:9.5px;letter-spacing:.1em;color:var(--pk-text-secondary);
   background:var(--pk-surface-secondary);border:1px solid var(--pk-border);
@@ -321,81 +346,105 @@ button{font-family:inherit;cursor:pointer}
 .pk-inbox-clear{
   appearance:none;border:0;background:transparent;cursor:pointer;
   font-family:var(--pk-mono);font-size:9px;letter-spacing:.12em;color:var(--pk-text-secondary);
-  padding:4px 12px;border-bottom:1px solid transparent;transition:color .18s var(--pk-ease),border-color .18s var(--pk-ease);
+  padding:6px 14px;border-bottom:1px solid transparent;transition:color .18s var(--pk-ease),border-color .18s var(--pk-ease);
 }
 .pk-inbox-clear:hover{color:var(--pk-text-primary);border-bottom-color:var(--pk-text-primary)}
 
-.pk-inbox-body{border-top:1px solid var(--pk-border);padding:10px 12px 12px;flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow-y:auto;scrollbar-width:thin}
-.pk-inbox-capture{display:flex;align-items:flex-end;gap:8px;flex:none}
-.pk-inbox-draft{
-  flex:1;min-width:0;resize:none;border:1px solid var(--pk-border);border-radius:12px;
-  background:var(--pk-surface-secondary);color:var(--pk-text-primary);
-  font-family:var(--pk-sans);font-size:13px;line-height:1.45;padding:5px 10px;
-  outline:none;transition:border-color .18s var(--pk-ease),box-shadow .18s var(--pk-ease);
-}
-.pk-inbox-draft:focus{border-color:var(--pk-text-primary);box-shadow:0 0 0 2px rgba(29,29,31,.08)}
-.pk-inbox-draft::placeholder{color:var(--pk-text-secondary);opacity:.75}
-.pk-inbox-add{
-  appearance:none;flex:none;border:1px solid var(--pk-border);border-radius:999px;
-  background:var(--pk-text-primary);color:var(--pk-surface);
-  font-family:var(--pk-mono);font-size:9.5px;letter-spacing:.12em;padding:6px 13px;
-  transition:transform .18s var(--pk-ease),opacity .18s var(--pk-ease);
-}
-.pk-inbox-add:hover:not(:disabled){transform:translateY(-1px)}
-.pk-inbox-add:active:not(:disabled){transform:scale(.96)}
-.pk-inbox-add:disabled{opacity:.45;cursor:default}
+.pk-inbox-body{border-top:1px solid var(--pk-border);padding:10px 12px 12px;flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+/* 3C-3C UI-INBOX-01: Capture+ADD 已从 Inbox 删除，相关元素不再渲染。
+   Keep legacy selectors as no-ops so an accidental reintroduction of the nodes
+   doesn't leak visible styling (harmless passthrough). */
+.pk-inbox-capture{display:none}
+.pk-inbox-draft{display:none}
+.pk-inbox-add{display:none}
 
-.pk-inbox-list{margin-top:10px;display:flex;flex-direction:column;gap:7px;flex:1 1 auto;min-height:0;max-height:236px;overflow-y:auto;scrollbar-width:thin;padding-right:2px}
-.pk-inbox-empty{
-  font-family:var(--pk-mono);font-size:10px;letter-spacing:.12em;color:var(--pk-text-secondary);
-  text-align:center;padding:14px 0 6px;opacity:.85;
+/* Inbox own scroll (§14): bounded, independent of Composer and Float. */
+.pk-inbox-list{
+  margin-top:4px;display:flex;flex-direction:column;gap:8px;
+  flex:1 1 auto;min-height:56px;overflow-y:auto;scrollbar-width:thin;padding-right:2px;
 }
+.pk-inbox-empty{
+  font-size:13px;color:var(--pk-text-secondary);
+  text-align:center;padding:18px 0 10px;opacity:.85;margin:0;
+}
+
+/* Thought — 3E minimal card: optimized text, toggle to original, click to edit. */
 .pk-thought{
   border:1px solid var(--pk-border);border-radius:14px;background:var(--pk-surface-secondary);
-  padding:9px 12px 8px;transition:border-color .18s var(--pk-ease),box-shadow .18s var(--pk-ease);
+  padding:11px 14px 9px;transition:border-color .18s var(--pk-ease),box-shadow .18s var(--pk-ease);
+}
+.pk-thought-enter{animation:pk-thought-pop .36s var(--pk-ease)}
+@keyframes pk-thought-pop{
+  0%{opacity:0;transform:scale(.86) translateY(-16px)}
+  60%{opacity:1;transform:scale(1.02) translateY(2px)}
+  100%{opacity:1;transform:scale(1) translateY(0)}
 }
 .pk-thought:hover{border-color:rgba(20,20,20,.24)}
-.pk-thought-head{display:flex;align-items:center;gap:8px;margin-bottom:4px}
-.pk-thought-src{
-  font-family:var(--pk-mono);font-size:8.5px;letter-spacing:.14em;padding:1px 7px;border-radius:999px;
-  border:1px solid var(--pk-border);color:var(--pk-text-secondary);
+
+.pk-thought-toggle{display:flex;gap:4px;margin:0 0 8px}
+.pk-toggle-btn{
+  appearance:none;border:1px solid var(--pk-border);background:transparent;border-radius:999px;
+  padding:2px 9px;font-family:var(--pk-mono);font-size:9px;letter-spacing:.08em;
+  color:var(--pk-text-secondary);cursor:pointer;transition:all .16s var(--pk-ease);
 }
-.pk-thought-src.voice{color:var(--pk-text-primary);border-color:var(--pk-text-primary)}
+.pk-toggle-btn:hover{color:var(--pk-text-primary);border-color:var(--pk-text-primary)}
+.pk-toggle-btn.on{background:var(--pk-text-primary);color:var(--pk-surface);border-color:var(--pk-text-primary)}
+
+.pk-thought-body{margin:0;font-size:14.5px;line-height:1.65;color:var(--pk-text-primary);
+  white-space:pre-wrap;word-break:break-word;
+  display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;
+  cursor:text;border-radius:6px;transition:background .16s var(--pk-ease);
+}
+.pk-thought-body:hover{background:rgba(20,20,20,.04)}
+.pk-thought-body:focus-visible{outline:1px dashed var(--pk-text-secondary);outline-offset:3px}
+.pk-thought[data-open="1"] .pk-thought-body{display:block;max-height:none;overflow:visible}
+
+.pk-thought-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+.pk-thought-meta{display:flex;align-items:center;gap:7px;min-width:0}
 .pk-thought-time{font-family:var(--pk-mono);font-size:8.5px;letter-spacing:.08em;color:var(--pk-text-secondary);opacity:.8}
-.pk-thought-expand{
+
+/* Delete is hover-only */
+.pk-thought-delete{
   appearance:none;border:0;background:transparent;cursor:pointer;
-  margin-left:auto;font-family:var(--pk-mono);font-size:8.5px;letter-spacing:.12em;
-  color:var(--pk-text-secondary);padding:2px 4px;border-bottom:1px solid transparent;
-  transition:color .18s var(--pk-ease),border-color .18s var(--pk-ease);
+  width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:15px;line-height:1;color:var(--pk-text-secondary);opacity:0;
+  transition:opacity .16s var(--pk-ease),background .16s var(--pk-ease),color .16s var(--pk-ease);
 }
-.pk-thought-expand:hover{color:var(--pk-text-primary);border-bottom-color:var(--pk-text-primary)}
-.pk-thought-original{margin:0;font-size:13.5px;line-height:1.55;color:var(--pk-text-primary);
-  white-space:pre-wrap;word-break:break-word;max-height:3.2em;overflow:hidden}
-.pk-thought[data-open="1"] .pk-thought-original{max-height:none;overflow:visible}
-.pk-thought-refined{margin:6px 0 0;padding-top:6px;border-top:1px dashed var(--pk-border);
-  font-size:13px;line-height:1.55;color:var(--pk-text-secondary);
-  white-space:pre-wrap;word-break:break-word;max-height:3.2em;overflow:hidden}
-.pk-thought[data-open="1"] .pk-thought-refined{max-height:none;overflow:visible}
-.pk-thought-refined .pk-refined-tag{font-family:var(--pk-mono);font-size:8.5px;letter-spacing:.12em;color:var(--pk-ok);margin-right:6px}
-.pk-thought-actions{display:flex;align-items:center;gap:2px;margin-top:7px;flex-wrap:wrap}
-.pk-thought-btn{
+.pk-thought:hover .pk-thought-delete{opacity:1}
+.pk-thought:focus-within .pk-thought-delete{opacity:1}
+.pk-thought-delete:focus-visible{opacity:1}
+.pk-thought-delete:hover{background:rgba(20,20,20,.08);color:var(--pk-text-primary)}
+@media (hover:none){.pk-thought-delete{opacity:.6}}
+
+/* COPY is hover-only */
+.pk-thought-copy{
   appearance:none;border:0;background:transparent;cursor:pointer;
-  font-family:var(--pk-mono);font-size:9px;letter-spacing:.1em;color:var(--pk-text-secondary);
-  padding:4px 8px;border-radius:8px;transition:color .18s var(--pk-ease),background .18s var(--pk-ease);
+  font-family:var(--pk-mono);font-size:8.5px;letter-spacing:.1em;
+  color:var(--pk-text-secondary);opacity:0;padding:3px 7px;border-radius:999px;
+  transition:opacity .16s var(--pk-ease),background .16s var(--pk-ease),color .16s var(--pk-ease);
 }
-.pk-thought-btn:hover{color:var(--pk-text-primary);background:var(--pk-surface)}
-.pk-thought-btn.primary{color:var(--pk-text-primary);font-weight:650}
+.pk-thought:hover .pk-thought-copy{opacity:1}
+.pk-thought:focus-within .pk-thought-copy{opacity:1}
+.pk-thought-copy:focus-visible{opacity:1}
+.pk-thought-copy:hover{background:rgba(20,20,20,.08);color:var(--pk-text-primary)}
+@media (hover:none){.pk-thought-copy{opacity:.7}}
+
+/* Long Thought DOC header */
+.pk-thought-doc{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin:0 0 8px;padding:5px 10px;border-radius:999px;
+  background:#fff8e8;border:1px solid #f4d98a;color:#6f4b00;
+}
+.pk-thought-doc-title{font-family:var(--pk-mono);font-size:8.5px;letter-spacing:.14em}
+.pk-thought-doc-size{font-family:var(--pk-mono);font-size:8.5px;color:#866006;letter-spacing:.08em}
+.pk-thought.long{border-color:#f1d98b;background:#fffdf5}
+
 .pk-thought-edit-ta{
   width:100%;resize:none;border:1px solid var(--pk-border);border-radius:10px;
   background:var(--pk-surface);color:var(--pk-text-primary);
-  font-family:var(--pk-sans);font-size:13.5px;line-height:1.5;padding:7px 9px;outline:none;
+  font-family:var(--pk-sans);font-size:14.5px;line-height:1.6;padding:8px 10px;outline:none;
 }
 .pk-thought-edit-ta:focus{border-color:var(--pk-text-primary)}
-
-/* Inbox stays pinned above the active view in every status (3C-2B). When the
-   delivered view is shown the inbox just shares the scroll column like always. */
-#pk-float[data-status="delivered"] .pk-inbox-body{display:block}
-#pk-float[data-status="delivered"] .pk-inbox-list{max-height:40vh}
 
 /* Workspace transient message */
 .pk-workspace-msg{
@@ -406,75 +455,48 @@ button{font-family:inherit;cursor:pointer}
 }
 .pk-workspace-msg.on{opacity:1;transform:translateY(0)}
 
-/* ---- Layer 03 · Physical Controls (3C-2B: VOICE / REFINE only) ---- */
+/* ---- Layer 03 · Primary actions (3C-3B) ----
+   One compact row: VOICE (capture) + REFINE (transform) are the two dominant
+   actions; SUBMIT is contextual/secondary. C1/C2 moved into the Review view. */
 .pk-controls{
   flex:none;display:flex;
-  align-items:end;justify-content:center;gap:14px;
-  padding:14px 26px 4px;
+  align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 18px 14px;
 }
-.pk-ctrl-mid,.pk-ctrl-right{display:flex;flex-direction:column;align-items:center;gap:5px}
-.pk-ctrl-caption{font-family:var(--pk-mono);font-size:9px;letter-spacing:.16em;color:var(--pk-text-secondary);white-space:nowrap}
+.pk-action-left,.pk-action-right{display:flex;align-items:center;gap:10px;min-width:0}
+.pk-voice-hint{
+  font-family:var(--pk-mono);font-size:9px;letter-spacing:.08em;color:var(--pk-text-secondary);
+  opacity:.75;white-space:nowrap;user-select:none;
+}
 
-/* REFINE pill — Composer content → Creative Inbox (3C-2B) */
-.pk-refine{
-  display:flex;align-items:center;gap:7px;
-  padding:10px 16px;border-radius:999px;
-  border:1px solid var(--pk-border);
-  background:linear-gradient(180deg,var(--pk-highlight),transparent 55%),var(--pk-surface-3);
-  color:var(--pk-text-primary);
-  box-shadow:inset 0 1px 0 var(--pk-highlight),0 4px 10px rgba(30,30,30,.08);
-  font-family:var(--pk-mono);font-size:10px;letter-spacing:.14em;
-  transition:transform .18s var(--pk-ease),box-shadow .18s var(--pk-ease),opacity .18s var(--pk-ease);
-}
-.pk-refine:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 18px rgba(30,30,30,.12)}
-.pk-refine:active:not(:disabled){transform:scale(.97)}
-.pk-refine:disabled{opacity:.45;cursor:default;transform:none}
-.pk-refine-icon{font-size:12px;line-height:1;color:var(--pk-ok)}
-.pk-refine::after{
-  content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%) translateY(3px);
-  font-family:var(--pk-mono);font-size:9.5px;letter-spacing:.14em;color:var(--pk-text-primary);
-  background:var(--pk-surface);border:1px solid var(--pk-border);border-radius:999px;padding:3px 10px;
-  white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s var(--pk-ease),transform .2s var(--pk-ease);
-}
-.pk-refine:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
-
-/* C1 / C2 42px */
-.pk-custom-btns{display:flex;gap:14px}
-.pk-custom-btn{
-  position:relative;width:42px;height:42px;border-radius:50%;
-  border:1px solid var(--pk-border);
-  background:radial-gradient(circle at 32% 28%,#FFFFFF,var(--pk-surface-secondary) 78%);
-  box-shadow:inset 0 1px 0 var(--pk-highlight),0 4px 10px rgba(30,30,30,.08);
-  color:var(--pk-text-secondary);font-family:var(--pk-mono);font-size:10px;letter-spacing:.08em;
-  transition:transform .18s var(--pk-ease),box-shadow .18s var(--pk-ease);
-}
-.pk-custom-btn:hover{transform:translateY(-1px)}
-.pk-custom-btn:active{transform:scale(.96)}
-.pk-custom-btn:disabled{opacity:.45;cursor:default;transform:none}
-.pk-custom-btn::after{
-  content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%) translateY(3px);
-  font-family:var(--pk-mono);font-size:9.5px;letter-spacing:.14em;color:var(--pk-text-primary);
-  background:var(--pk-surface);border:1px solid var(--pk-border);border-radius:999px;padding:3px 10px;
-  white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s var(--pk-ease),transform .2s var(--pk-ease);
-}
-.pk-custom-btn:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
-.pk-custom-btn.busy::after{content:attr(data-busy-tip);opacity:1;transform:translateX(-50%) translateY(0);color:var(--pk-text-secondary)}
-.pk-custom-btn.done-flash{border-color:var(--pk-ok);color:var(--pk-ok)}
-
-/* Voice Dial 76px */
+/* VOICE — compact tactile pill (3C-3B §8.1): prominent but never oversized.
+   Two states: READY (neutral) / LISTENING (filled, breathing dot). */
 .pk-voice{
-  position:relative;width:76px;height:76px;border-radius:50%;
+  position:relative;display:inline-flex;align-items:center;gap:8px;
+  height:44px;padding:0 18px;border-radius:999px;
   border:1px solid var(--pk-border);
-  background:radial-gradient(circle at 32% 28%,#FFFFFF,var(--pk-surface-3) 80%);
-  box-shadow:inset 0 1px 0 var(--pk-highlight), inset 0 -4px 10px rgba(30,30,30,.06), 0 8px 20px rgba(30,30,30,.12);
-  color:var(--pk-text-primary);font-size:18px;
-  transition:transform .18s var(--pk-ease);
+  background:linear-gradient(180deg,var(--pk-highlight),transparent 55%),var(--pk-surface);
+  box-shadow:inset 0 1px 0 var(--pk-highlight),0 4px 12px rgba(30,30,30,.08);
+  color:var(--pk-text-primary);
+  font-family:var(--pk-mono);font-size:10.5px;letter-spacing:.14em;
+  transition:transform .18s var(--pk-ease),box-shadow .18s var(--pk-ease),background .18s var(--pk-ease),color .18s var(--pk-ease);
 }
-.pk-voice:hover{transform:translateY(-1px)}
-.pk-voice:active{transform:scale(.96)}
-.pk-voice-ring{position:absolute;inset:6px;border-radius:50%;border:1px solid var(--pk-border);pointer-events:none}
-.pk-voice.listening .pk-voice-ring{animation:pk-breathe 2s var(--pk-ease) infinite;border-color:var(--pk-text-secondary)}
-@keyframes pk-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.pk-voice:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(30,30,30,.12)}
+.pk-voice:active{transform:scale(.97)}
+.pk-voice-dot{width:9px;height:9px;border-radius:50%;background:var(--pk-text-primary);flex:none;box-shadow:0 0 0 3px rgba(29,29,31,.08)}
+.pk-voice.listening{background:var(--pk-text-primary);color:var(--pk-surface);border-color:var(--pk-text-primary);box-shadow:0 0 0 4px rgba(120,90,255,.18),0 0 18px rgba(120,90,255,.35)}
+.pk-voice.listening .pk-voice-dot{background:currentColor;animation:pk-breathe 1.4s var(--pk-ease) infinite}
+.pk-voice.listening::before{
+  content:"";position:absolute;inset:-6px;border-radius:999px;
+  border:2px solid rgba(120,90,255,.45);
+  animation:pk-voice-ring 1.6s ease-out infinite;
+  pointer-events:none;
+}
+@keyframes pk-breathe{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.45);opacity:.7}}
+@keyframes pk-voice-ring{
+  0%{transform:scale(1);opacity:.55}
+  100%{transform:scale(1.18);opacity:0}
+}
 .pk-voice::after{
   content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%) translateY(3px);
   font-family:var(--pk-mono);font-size:9.5px;letter-spacing:.14em;color:var(--pk-text-primary);
@@ -482,41 +504,156 @@ button{font-family:inherit;cursor:pointer}
   white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s var(--pk-ease),transform .2s var(--pk-ease);
 }
 .pk-voice:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
+.pk-voice.listening::after{content:"LISTENING — tap or ⌘⇧M to stop"}
 
-/* Composer submit entry (3C-2B): the ONLY explicit final-send surface. Lives
-   inside the Composer (input view), full-width pill under the textarea. */
-.pk-submit{
-  flex:none;align-self:stretch;margin:6px 0 2px;
-  padding:8px 20px;border-radius:999px;
+/* REFINE — the second primary action (3C-3B §9): clear, findable, calm. */
+.pk-refine{
+  position:relative;display:inline-flex;align-items:center;gap:7px;
+  height:44px;padding:0 20px;border-radius:999px;
   border:1px solid var(--pk-border);
-  background:linear-gradient(180deg,var(--pk-highlight),transparent 55%),var(--pk-text-primary);
-  color:var(--pk-surface);
-  display:flex;align-items:center;justify-content:center;gap:10px;
-  box-shadow:0 10px 26px rgba(30,30,30,.18), inset 0 1px 0 rgba(255,255,255,.25);
-  font-family:var(--pk-mono);font-size:11px;letter-spacing:.14em;
+  background:linear-gradient(180deg,var(--pk-highlight),transparent 55%),var(--pk-surface-3);
+  color:var(--pk-text-primary);
+  box-shadow:inset 0 1px 0 var(--pk-highlight),0 4px 12px rgba(30,30,30,.08);
+  font-family:var(--pk-mono);font-size:10.5px;letter-spacing:.14em;
   transition:transform .18s var(--pk-ease),box-shadow .18s var(--pk-ease),opacity .18s var(--pk-ease);
 }
-.pk-submit:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 14px 32px rgba(30,30,30,.22), inset 0 1px 0 rgba(255,255,255,.25)}
-.pk-submit:active:not(:disabled){transform:scale(.98)}
-.pk-submit:disabled{opacity:.5;cursor:default}
-.pk-submit-arrow{font-size:16px;line-height:1;transition:transform .22s var(--pk-ease)}
-.pk-submit:hover:not(:disabled) .pk-submit-arrow{transform:translateX(3px)}
-#pk-float[data-status="ready_to_send"] .pk-submit{box-shadow:0 14px 34px rgba(30,30,30,.26), inset 0 1px 0 rgba(255,255,255,.25)}
+.pk-refine:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 18px rgba(30,30,30,.12)}
+.pk-refine:active:not(:disabled){transform:scale(.97)}
+.pk-refine:disabled{opacity:.45;cursor:default;transform:none}
+.pk-refine-icon{font-size:12px;line-height:1;color:var(--pk-ok);transition:transform .3s var(--pk-ease)}
+.pk-refine-spinner{
+  display:none;width:14px;height:14px;border-radius:50%;
+  border:2px solid transparent;
+  border-top-color:var(--pk-text-primary);
+  border-right-color:var(--pk-text-primary);
+  box-sizing:border-box;
+}
+/* 3C-3C §P1 REFINE 加载 ⇒ 小图标 + 呼吸灯，无逐行 loader。*/
+@keyframes pk-refine-breathe {
+  0%   { opacity:.65; transform:scale(.94) rotate(0deg) }
+  50%  { opacity:1;   transform:scale(1.04) rotate(180deg) }
+  100% { opacity:.65; transform:scale(.94) rotate(360deg) }
+}
+.pk-refine.pending{
+  opacity:1 !important;cursor:wait;
+  box-shadow:inset 0 1px 0 var(--pk-highlight),0 4px 12px rgba(30,30,30,.08);
+}
+.pk-refine.pending .pk-refine-icon{display:none}
+.pk-refine.pending .pk-refine-text{visibility:hidden}
+.pk-refine.pending .pk-refine-spinner{
+  display:inline-block;
+  animation: pk-refine-breathe 1.25s ease-in-out infinite;
+}
+.pk-refine::after{
+  content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%) translateY(3px);
+  font-family:var(--pk-mono);font-size:9.5px;letter-spacing:.14em;color:var(--pk-text-primary);
+  background:var(--pk-surface);border:1px solid var(--pk-border);border-radius:999px;padding:3px 10px;
+  white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s var(--pk-ease),transform .2s var(--pk-ease);
+}
+.pk-refine:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
+.pk-refine.pending::after{opacity:.95;transform:translateX(-50%) translateY(0)}
 
-.pk-brand-foot{flex:none;text-align:center;font-family:var(--pk-mono);font-size:8.5px;letter-spacing:.3em;color:var(--pk-text-secondary);padding:0 0 10px;opacity:.8}
-
-/* ================= Minimized bubble (64x64) ================= */
-#pk-minimized{
-  position:fixed;z-index:9999;width:64px;height:64px;border-radius:50%;
+/* SUBMIT — the second primary action (3E). Always visible next to REFINE. */
+.pk-submit{
+  display:inline-flex;align-items:center;gap:8px;
+  height:44px;padding:0 20px;border-radius:999px;
   border:1px solid var(--pk-border);background:var(--pk-surface);
-  box-shadow:var(--pk-shadow-soft);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-  transition:transform .18s var(--pk-ease),box-shadow .18s var(--pk-ease);
+  color:var(--pk-text-primary);
+  font-family:var(--pk-mono);font-size:10.5px;letter-spacing:.14em;
+  transition:transform .18s var(--pk-ease),background .18s var(--pk-ease),opacity .18s var(--pk-ease);
+}
+.pk-submit:hover:not(:disabled){background:var(--pk-surface-secondary)}
+.pk-submit:active:not(:disabled){transform:scale(.97)}
+.pk-submit:disabled{opacity:.4;cursor:default}
+.pk-submit-arrow{font-size:13px;line-height:1;transition:transform .22s var(--pk-ease)}
+.pk-submit:hover:not(:disabled) .pk-submit-arrow{transform:translateX(2px)}
+
+/* 3E submit → inbox: a soft pulse on the active submit button */
+@keyframes pk-submit-flash{
+  0%{box-shadow:0 0 0 0 rgba(29,29,31,.18)}
+  70%{box-shadow:0 0 0 10px rgba(29,29,31,0)}
+  100%{box-shadow:0 0 0 0 rgba(29,29,31,0)}
+}
+.pk-submit.flashing{animation:pk-submit-flash .45s var(--pk-ease)}
+
+/* C1/C2 — secondary contextual tools inside the Review view (3C-3B §10).
+   They transform the reviewed prompt, so they live next to it — never as
+   equal-weight bottom-bar features. */
+.pk-review-tools{display:flex;gap:8px;margin:0 0 10px;flex:none}
+.pk-review-tool{
+  appearance:none;border:1px solid var(--pk-border);background:var(--pk-surface);
+  color:var(--pk-text-secondary);border-radius:999px;padding:6px 14px;min-height:32px;
+  font-family:var(--pk-mono);font-size:9.5px;letter-spacing:.12em;cursor:pointer;
+  transition:color .18s var(--pk-ease),border-color .18s var(--pk-ease),opacity .18s var(--pk-ease);
+}
+.pk-review-tool:hover:not(:disabled){color:var(--pk-text-primary);border-color:var(--pk-text-primary)}
+.pk-review-tool:disabled{opacity:.4;cursor:default}
+.pk-review-tool.busy{border-color:var(--pk-text-secondary);color:var(--pk-text-secondary)}
+
+/* ================= PromptKey Orb (PHASE 3D RC1 · 56px) ================= */
+/* GATE D 置顶：Orb 与 Float 同层最顶，保证收起后永远可见、可召回 */
+#pk-minimized{
+  position:fixed;z-index:2147483000;width:56px;height:56px;border-radius:50%;
+  border:1px solid var(--pk-border);
+  background:rgba(18,18,20,.72);
+  -webkit-backdrop-filter:blur(10px) saturate(1.2);backdrop-filter:blur(10px) saturate(1.2);
+  box-shadow:var(--pk-shadow-soft), inset 0 0 12px rgba(120,90,255,.18);
+  display:flex;align-items:center;justify-content:center;
+  color:#f2f2f4;
+  opacity:0;transform:scale(.5);
+  transition:opacity .28s var(--pk-ease),transform .28s var(--pk-ease),box-shadow .18s var(--pk-ease);
   cursor:grab;touch-action:none;
 }
-#pk-minimized:hover{transform:scale(1.05);box-shadow:var(--pk-shadow)}
-.pk-min-dot{width:9px;height:9px;border-radius:50%;background:var(--pk-text-primary);box-shadow:0 0 0 3px rgba(29,29,31,.08)}
-.pk-min-pk{font-family:var(--pk-mono);font-size:9px;letter-spacing:.1em;color:var(--pk-text-secondary)}
+#pk-minimized:not([hidden]){opacity:1;transform:scale(1)}
+#pk-minimized:active{cursor:grabbing}
+#pk-minimized:focus-visible{outline:2px solid var(--pk-text-primary);outline-offset:3px}
+/* 边缘吸附回弹（拖动释放后 left/top 平滑过渡到位） */
+#pk-minimized.pk-orb-snapping{
+  transition:left .24s var(--pk-ease),top .24s var(--pk-ease),
+             transform .18s var(--pk-ease),box-shadow .18s var(--pk-ease);
+}
+.pk-orb-glyph{width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+  transition:filter .18s var(--pk-ease)}
+.pk-orb-glyph svg{width:100%;height:100%;display:block}
+/* 外圈 ring：listening 呼吸 / processing 旋转 的载体 */
+.pk-orb-ring{position:absolute;inset:-5px;border-radius:50%;border:1px solid transparent;
+  pointer-events:none;opacity:0;transition:opacity .25s var(--pk-ease)}
+
+/* ---- 8 状态：data-state 属性 + .pk-orb--* class 双通道 ---- */
+#pk-minimized[data-state="hover"],
+#pk-minimized.pk-orb--hover{
+  transform:scale(1.06);
+  box-shadow:var(--pk-shadow), inset 0 0 16px rgba(120,90,255,.28);
+}
+#pk-minimized[data-state="hover"] .pk-orb-glyph,
+#pk-minimized.pk-orb--hover .pk-orb-glyph{filter:brightness(1.25)}
+#pk-minimized[data-state="press"],
+#pk-minimized.pk-orb--press{transform:scale(.94)}
+#pk-minimized[data-state="listening"] .pk-orb-ring,
+#pk-minimized.pk-orb--listening .pk-orb-ring{
+  opacity:1;border-color:rgba(120,90,255,.55);
+  animation:pk-orb-breathe 2.2s ease-in-out infinite;
+}
+#pk-minimized[data-state="processing"] .pk-orb-ring,
+#pk-minimized.pk-orb--processing .pk-orb-ring{
+  opacity:1;border-top-color:rgba(120,90,255,.7);border-right-color:rgba(120,90,255,.25);
+  animation:pk-orb-spin 1.6s linear infinite;
+}
+#pk-minimized[data-state="ready"],
+#pk-minimized.pk-orb--ready{animation:pk-orb-pulse .45s var(--pk-ease) 1}
+#pk-minimized[data-state="error"],
+#pk-minimized.pk-orb--error{animation:pk-orb-shake .3s linear 1}
+@keyframes pk-orb-breathe{0%,100%{transform:scale(1);opacity:.45}50%{transform:scale(1.12);opacity:.9}}
+@keyframes pk-orb-spin{to{transform:rotate(360deg)}}
+@keyframes pk-orb-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes pk-orb-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}50%{transform:translateX(2px)}75%{transform:translateX(-2px)}}
+
+/* ---- A11y：prefers-reduced-motion 下关闭全部 Orb 动画 ---- */
+@media (prefers-reduced-motion: reduce){
+  #pk-minimized,.pk-orb-ring,#pk-minimized .pk-orb-ring{
+    animation:none !important;transition:none !important;
+  }
+}
 .pk-min-tip{
   position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(3px);
   font-family:var(--pk-mono);font-size:9.5px;letter-spacing:.12em;color:var(--pk-text-primary);
@@ -525,21 +662,15 @@ button{font-family:inherit;cursor:pointer}
 }
 #pk-minimized:hover .pk-min-tip{opacity:1;transform:translateX(-50%) translateY(0)}
 
-/* ================= Corner launcher pill ================= */
-#pk-pill[hidden],#pk-minimized[hidden]{display:none}
-#pk-pill{
-  position:fixed;z-index:9998;right:24px;bottom:24px;
-  display:flex;align-items:center;gap:8px;
-  background:var(--pk-surface);border:1px solid var(--pk-border);border-radius:999px;
-  padding:10px 18px;font-family:var(--pk-mono);font-size:10.5px;letter-spacing:.16em;color:var(--pk-text-primary);
-  box-shadow:var(--pk-shadow-soft);transition:all .22s var(--pk-ease);
-}
-#pk-pill:hover{transform:translateY(-1px);box-shadow:var(--pk-shadow)}
-.pk-pill-dot{width:9px;height:9px;border-radius:50%;background:var(--pk-text-primary);box-shadow:0 0 0 3px rgba(29,29,31,.08)}
+/* ================= Launcher surfaces ================= */
+/* 3D-RC2 GATE C: the corner launcher pill is retired — × collapses to the
+   always-present Orb; the Orb is the only persistent desktop entry point. */
+#pk-minimized[hidden]{display:none}
 
 /* ================= Toast ================= */
+/* GATE D: toast sits one notch above the Float so it is never covered */
 #pk-toast{
-  position:fixed;z-index:10000;left:50%;bottom:32px;transform:translateX(-50%) translateY(8px);
+  position:fixed;z-index:2147483200;left:50%;bottom:32px;transform:translateX(-50%) translateY(8px);
   background:var(--pk-text-primary);color:var(--pk-surface);
   font-family:var(--pk-mono);font-size:11px;letter-spacing:.1em;
   padding:8px 18px;border-radius:999px;opacity:0;pointer-events:none;
@@ -552,12 +683,15 @@ button{font-family:inherit;cursor:pointer}
   .site-hero h1{font-size:36px}
   .site-hero{padding:64px 0 48px}
   #pk-float{
-    width:min(92vw,620px);height:min(86vh,520px);
+    width:min(92vw,620px);height:min(86vh,640px);
     border-radius:24px;
   }
-  .pk-controls{padding:10px 14px 2px}
-  .pk-voice{width:62px;height:62px}
-  .pk-submit{margin:8px 0 2px}
+  /* 3C-3B: keep the compact pill geometry — no legacy 62px circle override. */
+  .pk-controls{padding:10px 14px 12px}
+  .pk-voice-hint{display:none}
+  /* PromptKey Orb: 小屏 48×48（触控目标仍 ≥44px） */
+  #pk-minimized{width:48px;height:48px}
+  .pk-orb-glyph{width:20px;height:20px}
 }
 @media (max-width:480px){
   /* Mobile compact (Phase 3C-2B): bottom bar centers VOICE + REFINE */
@@ -567,3 +701,141 @@ button{font-family:inherit;cursor:pointer}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}
 }
+
+/* ============================================================
+   Stage 2 · Core Product Surface Overrides (v2.0)
+   - Joystick Hardware DNA: physical shell feel (concave bar/panel
+     shadows, 2-layer rim, press buttons with depth)
+   - P0-1: Confirm & Send CTA inside the REVIEW view
+   - P1-4: Idle view becomes a big "click to begin" surface
+   - P2-6: right-edge offset when opened from Hero (avoids blocking
+     the Hero TRY CTA at desktop) — handled via window-manager; CSS
+     below only declares the semantic utility class the WM toggles.
+   ============================================================ */
+
+/* ---- Joystick DNA · Float shell ---- */
+#pk-float{
+  /* Rim: dark outline + light inner highlight -> machined alloy feel */
+  border:1px solid rgba(20,20,20,.18);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.7) inset,             /* top highlight rim */
+    0 -1px 0 rgba(0,0,0,.06) inset,                  /* bottom recess */
+    0 24px 80px rgba(30,30,30,.18),                  /* outer drop */
+    0  4px 16px rgba(30,30,30,.08);                  /* soft near shadow */
+}
+#pk-float:hover{box-shadow:
+    0 1px 0 rgba(255,255,255,.7) inset,
+    0 -1px 0 rgba(0,0,0,.06) inset,
+    0 32px 100px rgba(30,30,30,.24),
+    0  6px 20px rgba(30,30,30,.10);
+}
+
+/* ---- Joystick DNA · Concave System Bar (mounted bezel) ---- */
+.pk-system-bar{
+  background:linear-gradient(180deg, rgba(0,0,0,.04) 0%, rgba(0,0,0,0) 55%);
+  border-bottom:1px solid rgba(0,0,0,.08);
+  box-shadow:0 1px 0 rgba(255,255,255,.6) inset;
+}
+.pk-win-btn{transition:all .14s var(--pk-ease)}
+.pk-win-btn:hover{background:rgba(29,29,31,.06)}
+.pk-win-btn:active{transform:translateY(1px);background:rgba(29,29,31,.12)}
+
+/* ---- Joystick DNA · Concave control panel (physical buttons recess) ---- */
+.pk-controls{
+  background:linear-gradient(180deg, rgba(0,0,0,.015), rgba(0,0,0,.04));
+  border-top:1px solid rgba(0,0,0,.08);
+  box-shadow:0 -1px 0 rgba(255,255,255,.5) inset;
+}
+.pk-refine,.pk-voice,.pk-submit,.pk-review-tool{
+  transition:transform .12s var(--pk-ease),box-shadow .12s var(--pk-ease),background .12s var(--pk-ease);
+}
+.pk-refine:active,.pk-voice:active,.pk-submit:active,.pk-confirm:active,.pk-review-tool:active{
+  transform:translateY(1px);
+  box-shadow:0 0 0 rgba(0,0,0,0) !important;
+}
+/* >= 44px touch targets on primary actions (3C-3B §18) */
+.pk-refine,.pk-voice{min-height:44px;min-width:44px}
+.pk-submit{min-height:40px}
+.pk-win-btn{min-height:32px;min-width:32px}  /* title bar buttons are smaller */
+
+/* ---- P0-1 · Review Confirm CTA (primary, sticky-feeling) ---- */
+.pk-review-footer{
+  margin-top:auto;padding:14px 20px 6px;
+  border-top:1px solid var(--pk-border);
+  background:linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(0,0,0,.02) 100%);
+}
+.pk-confirm{
+  appearance:none;border:none;border-radius:14px;
+  width:100%;padding:14px 20px;min-height:52px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  background:linear-gradient(180deg, #1D1D1F 0%, #111112 100%);
+  color:var(--pk-surface);font-size:14px;font-weight:700;letter-spacing:.04em;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.14) inset,
+    0 8px 20px rgba(29,29,31,.22),
+    0 2px 6px rgba(29,29,31,.12);
+  transition:transform .14s var(--pk-ease),box-shadow .14s var(--pk-ease),filter .14s var(--pk-ease);
+}
+.pk-confirm:hover{filter:brightness(1.08);box-shadow:
+    0 1px 0 rgba(255,255,255,.14) inset,
+    0 12px 28px rgba(29,29,31,.28),
+    0 2px 6px rgba(29,29,31,.14);
+}
+.pk-confirm[disabled],.pk-confirm[aria-disabled="true"]{
+  filter:grayscale(.3) opacity(.45);cursor:not-allowed;pointer-events:none;
+}
+.pk-confirm-icon{font-size:15px;opacity:.9}
+.pk-confirm-shortcut{
+  margin-left:6px;padding:3px 8px;border-radius:6px;
+  font-family:var(--pk-mono);font-size:10.5px;letter-spacing:.06em;color:rgba(255,255,255,.65);
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
+}
+@media (max-width:700px){.pk-confirm-shortcut{display:none}}
+
+/* ---- P1-4 · Idle view = clickable begin surface ---- */
+.pk-view-idle{
+  cursor:pointer;
+  transition:background .18s var(--pk-ease);
+  border-radius:12px;
+}
+.pk-view-idle:hover{
+  background:rgba(29,29,31,.03);
+}
+.pk-view-idle:hover .pk-idle-hint{
+  color:var(--pk-text-primary);
+  transform:translateX(4px);
+}
+.pk-idle-hint{transition:all .18s var(--pk-ease)}
+.pk-view-idle:active{background:rgba(29,29,31,.055)}
+/* Hint affordance: always show subtle "> Start typing" in the idle view */
+.pk-view-idle::after{
+  content:"click anywhere to start";
+  position:absolute;right:18px;bottom:10px;
+  font-family:var(--pk-mono);font-size:10.5px;letter-spacing:.08em;
+  color:rgba(116,113,106,.5);
+}
+.pk-view-idle:hover::after{color:var(--pk-text-secondary)}
+
+/* ---- Stage 2 utility: right-shifted Float to avoid Hero overlap (WM uses) ---- */
+#pk-float[data-right-shift="true"]{ /* no-op here; coordinates are inline */ }
+
+/* ---- Subtle data-tip tooltips (P1-5 disabled hints, Stage 7 completes) ----
+   3C-3B: VOICE/REFINE carry their own light pill tooltips (see Layer 03);
+   the generic dark bubble applies to every OTHER [data-tip] element. */
+[data-tip]{position:relative}
+[data-tip]:not(.pk-voice):not(.pk-refine):hover::after{
+  content:attr(data-tip);
+  position:absolute;z-index:50;
+  left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);
+  background:var(--pk-text-primary);color:var(--pk-surface);
+  font-size:10.5px;letter-spacing:.02em;white-space:nowrap;
+  padding:4px 10px;border-radius:6px;opacity:.92;pointer-events:none;
+  font-family:var(--pk-sans);font-weight:500;
+}
+button[disabled][data-tip]:hover::after{
+  /* disabled buttons usually suppress :hover; force show via wrapper trick
+     (we apply same tooltip to the parent container of disabled buttons in JS later;
+     rule here kept as base definition) */
+  display:block;
+}
+

@@ -21,6 +21,7 @@ export function createFlows({ store, ai, voice, delivery, storage, delays = {} }
   let voiceSession = 0;         // increments per voice session — stale onEnd chains die
   let voiceFlowActive = false;  // true from voice start until its analysis settles
   let reqSeq = 0;               // request generation — late responses from older generations die
+  let refineReqSeq = 0;         // refine pending generation — stale finally blocks must not clear the flag
   function trackRequest() {
     if (pendingAbort) pendingAbort.abort();
     pendingAbort = new AbortController();
@@ -29,6 +30,7 @@ export function createFlows({ store, ai, voice, delivery, storage, delays = {} }
   }
   function killPendingRequest() {
     reqSeq += 1; // any in-flight response is now stale, even if the provider ignores AbortSignal
+    refineReqSeq += 1; // a killed refine must not clear the pending flag in its finally
     if (pendingAbort) pendingAbort.abort();
   }
   function isAborted(e) {
@@ -76,40 +78,13 @@ export function createFlows({ store, ai, voice, delivery, storage, delays = {} }
     }
   });
 
-  /* ---- Thought → Understanding → Structuring → Review ---- */
+  /* ---- Thought → Creative Inbox (3E simplified) -----
+     The old understanding/structuring/review/send pipeline is retired.
+     SUBMIT now stores the user's exact Composer words as a Thought directly
+     in the Creative Inbox (the machine handles the state change). */
   async function submitThought() {
+    clearDraftNow();
     store.dispatch(act.submitThought());
-    if (S().interaction !== "understanding") return; // guard rejected (empty input)
-
-    // Understanding animation — state-driven via UNDERSTANDING_STEP
-    const steps = [0, 1, 2];
-    for (let i = 0; i < steps.length; i++) {
-      await wait(i === 0 ? d.understandFirst : d.understandStep);
-      if (S().interaction !== "understanding") return; // interrupted
-      store.dispatch(act.understandingStep(i));
-    }
-    await wait(d.understandStep);
-    if (S().interaction !== "understanding") return;
-
-    try {
-      const inputSource = lastInputSource;
-      lastInputSource = "text";
-      const signal = trackRequest();
-      const myReq = reqSeq;
-      const analysis = await ai.analyzePrompt(S().session.rawThought, { signal, inputSource });
-      if (myReq !== reqSeq) return; // stale response (cancelled / superseded)
-      if (S().interaction !== "understanding") return;
-      voiceFlowActive = false;
-      store.dispatch(act.completeUnderstanding(analysis));
-      store.dispatch(act.structurePrompt(analysis.prompt));
-      await wait(d.structuringSettle + 200);
-      await persistSession();
-    } catch (e) {
-      voiceFlowActive = false;
-      if (isAborted(e)) return; // superseded by a newer request
-      store.dispatch(act.error(e.code === "AI_TIMEOUT" ? ERR.AI_TIMEOUT : ERR.AI_ERROR,
-        "Something interrupted the flow. Try again."));
-    }
   }
 
   /* ---- C1 / C2 ---- */
@@ -135,32 +110,12 @@ export function createFlows({ store, ai, voice, delivery, storage, delays = {} }
     }
   }
 
-  /* ---- Confirm → Ready → Sending → Delivered ---- */
+  /* ---- SUBMIT → Creative Inbox (3E simplified) -----
+     The old confirm → ready → sending → delivered pipeline is retired.
+     SUBMIT now stores the Composer content directly in the Creative Inbox. */
   async function confirmAndSend() {
     const s = S().interaction;
     if (s === "idle" || s === "input") return submitThought();
-    if (s === "editing") {
-      store.dispatch(act.showMessage("Finish editing first — press Enter to save."));
-      return;
-    }
-    if (s !== "review") return;
-
-    store.dispatch(act.confirmPrompt());
-    await wait(d.readyToSend);
-    if (S().interaction !== "ready_to_send") return;
-    store.dispatch(act.sendPrompt());
-    try {
-      await delivery.deliver(activePrompt(S())); // demo: prepares channel
-      await wait(d.sending);
-      if (S().interaction !== "sending") return;
-      store.dispatch(act.deliveryComplete());
-      // 3C-3A §6.4: a COMPLETED submit clears the persisted draft. The in-state
-      // text stays until NEW (the delivered view owns the screen), but the disk
-      // draft is gone — a refresh after DELIVERED starts clean.
-      await clearDraftNow();
-    } catch (e) {
-      store.dispatch(act.error(ERR.DELIVERY_ERROR, "Delivery failed. Your prompt is still here."));
-    }
   }
 
   /* ---- Copy / New Thought ---- */
@@ -196,8 +151,8 @@ export function createFlows({ store, ai, voice, delivery, storage, delays = {} }
          → VOICE_ENDED → idle, so the user can immediately speak again (multi-round).
        · CANCEL → abort everything → restore pre-voice Composer draft, no AI call. */
   function bindVoiceCallbacks() {
-    voice.onTranscript((text, isFinal) => {
-      store.dispatch(act.voiceTranscript(text, isFinal));
+    voice.onTranscript((text, isFinal, seq) => {
+      store.dispatch(act.voiceTranscript(text, isFinal, seq));
     });
     voice.onError((code) => {
       voiceFlowActive = false;
@@ -306,21 +261,22 @@ export function createFlows({ store, ai, voice, delivery, storage, delays = {} }
     store.dispatch(act.showMessage("Added to your prompt."));
   }
 
-  /* REFINE (3C-2B): the unique Creative Inbox entry path.
-     Composer content → AI analyze → createThought. The Thought's originalText is
-     a snapshot of the user's exact Composer words (preserved byte-for-byte),
-     and the AI output is attached as refinedText via INBOX_REFINE. The Composer
-     text itself is preserved (REFINE captures for the inbox; it does not consume
-     the input). */
+  /* REFINE (3E): optimize the Composer text in place.
+     Composer content → AI analyze → refined text written back to Composer.
+     The original source is preserved via REFINE_RESULT so SUBMIT can store an
+     original/refined pair in the Inbox. */
   async function refineFromComposer() {
     const source = S().input.trim();
     if (!source) return;
     // Bug #10: only LIVE voice blocks REFINE — listening/processing. A terminal
     // error must NOT block the fallback path: after a speech error the words are
-    // already in the Composer (or typeable), and REFINE into the Creative Inbox
-    // is exactly the recovery the user needs.
+    // already in the Composer (or typeable), and REFINE is exactly the recovery.
     if (S().voice === "listening" || S().voice === "processing") return; // don't refine mid-voice
+    if (S().refinePending) return; // avoid double-fires from rapid clicks / double-tap
     voiceFlowActive = false;
+    store.dispatch(act.refinePending(true));
+    refineReqSeq += 1;
+    const myRefineReq = refineReqSeq;
     try {
       const signal = trackRequest();
       const myReq = reqSeq;
@@ -331,25 +287,14 @@ export function createFlows({ store, ai, voice, delivery, storage, delays = {} }
         store.dispatch(act.showToast("REFINE UNAVAILABLE"));
         return;
       }
-      // originalText = user's exact words; refinedText = AI output. Never both
-      // equal — the AI never overwrites what the user actually said.
-      const created = S().inbox.thoughts.length
-        ? S().inbox.thoughts[S().inbox.thoughts.length - 1].id
-        : null;
-      store.dispatch(act.inboxAddRefined(source, "text"));
-      const fresh = S().inbox.thoughts[S().inbox.thoughts.length - 1];
-      if (fresh && fresh.id !== created) {
-        store.dispatch(act.inboxRefine(fresh.id, refined));
-      }
-      // REFINE succeeded → the user has recovered past the transient speech
-      // error. UPDATE_INPUT echoes the same value but its reducer also clears
-      // state.error, so the stale "tap the mic to retry" hint doesn't linger
-      // after the user already recovered via typing + REFINE (Bug #10).
-      store.dispatch(act.updateInput(S().input));
-      store.dispatch(act.showToast("REFINED → INBOX"));
+      // 3E: write optimized text back to Composer; original is preserved for SUBMIT.
+      store.dispatch(act.refineResult(source, refined));
     } catch (e) {
       // refinement is best-effort; the Composer text is never lost
       if (!isAborted(e)) store.dispatch(act.showToast("REFINE UNAVAILABLE"));
+    } finally {
+      // only clear if this generation still owns the pending flag
+      if (myRefineReq === refineReqSeq) store.dispatch(act.refinePending(false));
     }
   }
 

@@ -119,13 +119,14 @@ test("1b: error state recovers to idle via RESET, and error is cleared", () => {
 /* 需求 2：CLOSE_FLOAT 必须终止/清理 Voice Session、清除 error，不留 listening/processing/error 残留。 */
 test("2: CLOSE_FLOAT resets the voice slice — no listening/processing/error residue, error cleared", async () => {
   const h = harness();
+  h.store.dispatch(act.openFloat());
   await h.flows.toggleVoice();
   h.voice.emitError("VOICE_ERROR");
   assert.equal(h.store.getState().voice, "error");
 
   await h.flows.closeFloat();
   let s = h.store.getState();
-  assert.equal(s.window, "hidden");
+  assert.equal(s.window, "minimized");
   assert.equal(s.voice, "idle", "error 不得残留在关闭后");
   assert.equal(s.error, null, "voice error 必须被清除");
   assert.equal(s.voiceTranscript, null);
@@ -134,6 +135,7 @@ test("2: CLOSE_FLOAT resets the voice slice — no listening/processing/error re
 
 test("2b: closing while LISTENING aborts the provider (mic stopped) and resets to idle", async () => {
   const h = harness();
+  h.store.dispatch(act.openFloat());
   await h.flows.toggleVoice();
   assert.equal(h.store.getState().voice, "listening");
   assert.equal(h.voice.calls.abort, 0);
@@ -141,13 +143,14 @@ test("2b: closing while LISTENING aborts the provider (mic stopped) and resets t
   await h.flows.closeFloat();
   assert.equal(h.voice.calls.abort, 1, "关闭时必须 abort 底层 recognition，停止 mic");
   const s = h.store.getState();
-  assert.equal(s.window, "hidden");
+  assert.equal(s.window, "minimized");
   assert.equal(s.voice, "idle");
   assert.equal(s.voiceTranscript, null);
 });
 
 test("2c: closing while PROCESSING aborts the provider and resets to idle", async () => {
   const h = harness();
+  h.store.dispatch(act.openFloat());
   await h.flows.toggleVoice();
   h.voice.emitTranscript("final words", true);
   h.store.dispatch(act.stopVoice()); // → processing
@@ -156,7 +159,7 @@ test("2c: closing while PROCESSING aborts the provider and resets to idle", asyn
   await h.flows.closeFloat();
   assert.equal(h.voice.calls.abort, 1);
   const s = h.store.getState();
-  assert.equal(s.window, "hidden");
+  assert.equal(s.window, "minimized");
   assert.equal(s.voice, "idle");
 });
 
@@ -165,18 +168,19 @@ test("2d: closing a calm (idle-voice) Float does not touch the provider and stil
   h.store.dispatch(act.openFloat());
   await h.flows.closeFloat();
   assert.equal(h.voice.calls.abort, 0, "无活动语音会话时不应无谓 abort");
-  assert.equal(h.store.getState().window, "hidden");
+  assert.equal(h.store.getState().window, "minimized");
   assert.equal(h.store.getState().voice, "idle");
 });
 
 test("2e: closing with voice error KEEPS the Composer draft (input persists across close)", async () => {
   const h = harness();
+  h.store.dispatch(act.openFloat());
   h.store.dispatch(act.updateInput("my typed draft"));
   await h.flows.toggleVoice();
   h.voice.emitError("VOICE_ERROR");
   await h.flows.closeFloat();
   const s = h.store.getState();
-  assert.equal(s.window, "hidden");
+  assert.equal(s.window, "minimized");
   assert.equal(s.voice, "idle");
   assert.equal(s.error, null);
   assert.equal(s.input, "my typed draft", "Composer 草稿在关闭后保留");
@@ -220,7 +224,7 @@ test("4: [spec path] idle → Voice Error → CLOSE_FLOAT → OPEN_FLOAT → voi
   // → CLOSE_FLOAT（清理 voice session + 清除 error）
   await h.flows.closeFloat();
   let s = h.store.getState();
-  assert.equal(s.window, "hidden");
+  assert.equal(s.window, "minimized");
   assert.equal(s.voice, "idle");
   assert.equal(s.error, null);
 
@@ -238,16 +242,21 @@ test("4: [spec path] idle → Voice Error → CLOSE_FLOAT → OPEN_FLOAT → voi
   // → REFINE enabled
   assert.equal(canRefine(s), true, "REFINE enabled");
 
-  // → REFINE 正常进入 Inbox
+  // → REFINE 正常优化到 Composer，再 SUBMIT 入箱
   await h.flows.refineFromComposer();
   await tick();
   s = h.store.getState();
   assert.equal(h.ai.calls.analyze, 1);
-  assert.equal(inboxThoughts(s).length, 1, "REFINE 入箱");
+  assert.equal(s.input, "OPTIMIZED ▸ design a pricing page", "REFINE 写 Composer");
+  assert.equal(inboxThoughts(s).length, 0, "REFINE 本身不入箱");
+  await h.flows.submitThought();
+  await tick();
+  s = h.store.getState();
+  assert.equal(inboxThoughts(s).length, 1, "SUBMIT 入箱");
   const t = inboxThoughts(s)[0];
   assert.equal(t.originalText, "design a pricing page");
   assert.equal(t.refinedText, "OPTIMIZED ▸ design a pricing page");
-  assert.equal(s.input, "design a pricing page", "REFINE 不消费 Composer 内容");
+  assert.equal(s.input, "", "SUBMIT 成功后清空 Composer");
   assert.equal(s.voice, "idle");
 });
 
@@ -265,9 +274,14 @@ test("4b: after a voice error, REFINE is still usable with Composer content (err
   await h.flows.refineFromComposer();
   await tick();
   s = h.store.getState();
-  assert.equal(inboxThoughts(s).length, 1);
+  assert.equal(s.input, "OPTIMIZED ▸ idea captured by typing", "REFINE 写 Composer");
+  assert.equal(inboxThoughts(s).length, 0, "REFINE 本身不入箱");
   assert.equal(s.voice, "error", "REFINE 不改变 voice 态（用户仍可点 RETRY 或继续）");
   assert.equal(s.error, null, "REFINE 成功后清除 error");
+  await h.flows.submitThought();
+  await tick();
+  s = h.store.getState();
+  assert.equal(inboxThoughts(s).length, 1, "SUBMIT 入箱");
 });
 
 test("4c: REFINE stays blocked only during LIVE voice (listening/processing)", async () => {

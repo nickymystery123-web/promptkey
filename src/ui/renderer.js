@@ -1,14 +1,12 @@
 /* Renderer — the ONLY module that writes to the DOM (besides window-manager's
    positioning). Pure projection: state → pixels. All interactions dispatch actions. */
 
-import { SECTION_NAMES, sectionToText } from "../models/prompt.js";
 import { act } from "../state/actions.js";
 import {
-  effectiveStatus, statusLabel, sectionKeys,
-  customButtonsEnabled, isProcessing, currentPrompt, inboxThoughts, canRefine, canConfirm,
+  effectiveStatus, statusLabel, inboxThoughts, canRefine, canConfirm,
   draftBadgeLabel, draftSavedLabel, canUndoInput, canRedoInput, aiModeLabel
 } from "../state/selectors.js";
-import { thoughtCopyText, thoughtPreview } from "../models/thought.js";
+import { thoughtCopyText } from "../models/thought.js";
 
 export function collectRefs(doc) {
   const $ = (id) => doc.getElementById(id);
@@ -24,217 +22,63 @@ export function collectRefs(doc) {
     transcriptLabel: $("pk-transcript-label"),
     transcriptText: $("pk-transcript-text"),
     voiceCancel: $("pk-voice-cancel"),
-    understandList: $("pk-understand-list"),
-    sections: $("pk-sections"),
-    reviewbar: $("pk-reviewbar"),
-    yousaidText: $("pk-yousaid-text"),
-    useOriginal: $("pk-use-original"),
-    useOptimized: $("pk-use-optimized"),
     msg: $("pk-workspace-msg"),
-    c1: $("pk-c1"),
-    c2: $("pk-c2"),
     voice: $("pk-voice"),
     voiceCaption: $("pk-voice-caption"),
     refine: $("pk-refine"),
     submit: $("pk-submit"),
-    copyBtn: $("pk-copy-btn"),
-    newBtn: $("pk-new-btn"),
     aiMode: $("pk-ai-mode"),
     draftBadge: $("pk-draft-badge"),
     draftSaved: $("pk-draft-saved"),
     undo: $("pk-undo"),
     redo: $("pk-redo"),
     minimized: $("pk-minimized"),
-    pill: $("pk-pill"),
     toast: $("pk-toast"),
     inbox: $("pk-inbox"),
     inboxToggle: $("pk-inbox-toggle"),
     inboxClear: $("pk-inbox-clear"),
     inboxCount: $("pk-inbox-count"),
     inboxBody: $("pk-inbox-body"),
-    inboxDraft: $("pk-inbox-draft"),
-    inboxAdd: $("pk-inbox-add"),
-    inboxList: $("pk-inbox-list")
+    inboxList: $("pk-inbox-list"),
+    idleView: $("pk-view-idle")
   };
 }
 
 export function createRenderer(refs, store) {
-  let lastRenderKey = null;
-  let lastEditingKey = null;
   let msgTimer = null;
   let toastTimer = null;
   let lastTrigger = null; // element to return focus to after close
-  const flowsRef = {};    // late-bound flow references (set by main.js) for inbox actions
+  let copyFlow = null;    // 3E: copyThoughtToClipboard from flows
+  let submitAnimTimer = null;
+  let thoughtEnterTimer = null;
+  let prevInboxCount = 0;
 
   function bindFlows(flows) {
-    flowsRef.sendThoughtToPrompt = flows.sendThoughtToPrompt;
-    flowsRef.copyThoughtToClipboard = flows.copyThoughtToClipboard;
-    flowsRef.refineFromComposer = flows.refineFromComposer;
+    copyFlow = flows.copyThoughtToClipboard;
   }
 
   function setLastTrigger(el) { lastTrigger = el; }
 
-  /* ---- sections (optimized) or raw words (original) ---- */
-  function renderSections(state) {
-    const session = state.session;
-    const head = session && session.versions.length
-      ? session.versions[session.versions.length - 1]
-      : null;
-    const original = !!(session && session.selection === "original");
-    const keys = original ? [] : sectionKeys(state);
-
-    if ((!head && !original) || (!original && !keys.length)) {
-      if (lastRenderKey !== null) { refs.sections.innerHTML = ""; lastRenderKey = null; }
-      return;
-    }
-
-    const renderKey = (head ? head.id : "none") + ":" + (original ? "original" : "optimized");
-    if (renderKey !== lastRenderKey) {
-      lastRenderKey = renderKey;
-      refs.sections.innerHTML = "";
-
-      if (original) {
-        // Original — the user's exact words, shown read-only. Never reconstructed from AI output.
-        const block = document.createElement("div");
-        block.className = "pk-section on pk-original-block";
-        const name = document.createElement("div");
-        name.className = "pk-section-name";
-        name.textContent = "ORIGINAL — YOUR EXACT WORDS";
-        const val = document.createElement("div");
-        val.className = "pk-section-value";
-        val.textContent = session.rawThought;
-        block.append(name, val);
-        refs.sections.appendChild(block);
-        return;
-      }
-
-      const prompt = currentPrompt(state);
-      keys.forEach((key) => {
-        const sec = document.createElement("div");
-        sec.className = "pk-section on";
-        sec.dataset.key = key;
-        const name = document.createElement("div");
-        name.className = "pk-section-name";
-        name.textContent = SECTION_NAMES[key];
-        const val = document.createElement("div");
-        val.className = "pk-section-value";
-        const v = prompt[key];
-        if (Array.isArray(v)) {
-          const ul = document.createElement("ul");
-          v.forEach((item) => {
-            const li = document.createElement("li");
-            li.textContent = item;
-            ul.appendChild(li);
-          });
-          val.appendChild(ul);
-        } else {
-          val.textContent = v;
-        }
-        const hint = document.createElement("div");
-        hint.className = "pk-section-hint";
-        hint.textContent = "✓ UPDATED";
-        sec.append(name, val, hint);
-        sec.addEventListener("click", () => {
-          const st = store.getState();
-          if (st.editingSection) return;
-          if (["review", "ready_to_send"].includes(st.interaction)) {
-            store.dispatch(act.selectSection(key));
-          }
-        });
-        refs.sections.appendChild(sec);
-      });
-      if (head.source === "edited" || head.source === "improved" || head.source === "rewritten") {
-        const activeKey = state.session.selectedSection;
-        const node = refs.sections.querySelector(`.pk-section[data-key="${activeKey}"]`);
-        if (node) node.classList.add("just-saved");
-      }
-    }
-
-    // selection highlight (cheap to recompute)
-    const nodes = refs.sections.querySelectorAll(".pk-section");
-    const sel = state.session ? state.session.selectedSection : null;
-    const selectable = ["review", "editing", "ready_to_send"].includes(state.interaction);
-    nodes.forEach((n) => {
-      n.classList.toggle("active", selectable && n.dataset.key === sel);
-    });
-  }
-
-  /* ---- inline section editor ---- */
-  function renderEditor(state) {
-    const editing = state.editingSection;
-    if (editing === lastEditingKey) return;
-    lastEditingKey = editing;
-    if (!editing) return;
-
-    const sec = refs.sections.querySelector(`.pk-section[data-key="${editing}"]`);
-    if (!sec) return;
-    const valEl = sec.querySelector(".pk-section-value");
-    if (!valEl) return;
-    const prompt = currentPrompt(state);
-    const text = sectionToText(prompt, editing);
-
-    const ta = document.createElement("textarea");
-    ta.className = "pk-section-edit";
-    ta.value = text;
-    ta.rows = Math.min(6, Math.max(1, text.split("\n").length));
-    valEl.replaceWith(ta);
-    ta.setAttribute("aria-label", "Edit " + (SECTION_NAMES[editing] || editing));
-    ta.focus();
-    ta.setSelectionRange(ta.value.length, ta.value.length);
-
-    let committed = false;
-    const commit = (save) => {
-      if (committed) return;
-      committed = true;
-      store.dispatch(save ? act.saveEdit(editing, ta.value) : act.cancelEdit());
-    };
-    ta.addEventListener("blur", () => commit(true));
-    ta.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") { e.preventDefault(); commit(false); }
-      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commit(true); }
-      e.stopPropagation();
-    });
-  }
-
-  /* ---- understanding lines (state-driven) ---- */
-  function renderUnderstanding(state) {
-    const lines = refs.understandList.querySelectorAll("li");
-    lines.forEach((li, i) => {
-      const step = state.understandStep;
-      li.classList.toggle("on", step >= i);
-      li.classList.toggle("done", step > i || step >= 3);
-    });
-  }
-
   /* ---- live voice transcript preview ----
-     Interim = muted (still being recognized); final = solid (committed).
+     3D-RC2 GATE B: the live words now surface directly in the Composer, so
+     while LISTENING this panel keeps only the status line + CANCEL. During
+     PROCESSING (after an explicit stop) it recaps the final transcript.
      Interim text is preview-only and never reaches the AI backend. */
   function renderVoice(state) {
-    const active = state.voice === "listening" || state.voice === "processing";
+    // 3E: no small LISTENING line — the prominent voice-button breathing ring
+    // is the only listening cue. Keep the panel for the processing recap only.
+    const active = state.voice === "processing";
     refs.transcript.hidden = !active;
     if (!active) return;
-    refs.transcriptLabel.textContent = state.voice === "processing" ? "PROCESSING" : "LISTENING";
+    refs.transcriptLabel.textContent = "PROCESSING";
+    refs.transcriptText.hidden = false;
     const t = state.voiceTranscript;
-    refs.transcriptText.textContent = t && t.text ? t.text : "Listening…";
+    refs.transcriptText.textContent = t && t.text ? t.text : "";
     refs.transcriptText.classList.toggle("interim", !!(t && t.text && !t.final));
     refs.transcriptText.classList.toggle("empty", !(t && t.text));
   }
 
-  /* ---- review bar: YOU SAID + Original/Optimized choice ---- */
-  function renderReviewbar(state) {
-    const session = state.session;
-    const show = !!session && ["review", "editing", "ready_to_send", "sending"].includes(state.interaction);
-    refs.reviewbar.hidden = !show;
-    if (!show) return;
-    refs.yousaidText.textContent = session.rawThought;
-    const original = session.selection === "original";
-    refs.useOriginal.setAttribute("aria-pressed", original ? "true" : "false");
-    refs.useOptimized.setAttribute("aria-pressed", original ? "false" : "true");
-    refs.useOriginal.classList.toggle("on", original);
-    refs.useOptimized.classList.toggle("on", !original);
-  }
-
-  /* ---- Creative Inbox (Phase 3C-2A) ----
+  /* ---- Creative Inbox (3E simplified) ----
      Constant presence inside the workspace. Capture is local & instant —
      the inbox never calls AI on add/edit/delete/copy/expand, so it never
      blocks the active prompt session. Refined text (if present) is shown
@@ -251,10 +95,7 @@ export function createRenderer(refs, store) {
     const thoughts = inboxThoughts(state);
     const count = thoughts.length;
     const open = state.inbox && state.inbox.open === true;
-    const expandedIds = state.inbox ? state.inbox.expandedIds : [];
 
-    // The inbox is always mounted inside the workspace (not a gated view),
-    // so its own header / draft can stay live regardless of prompt status.
     refs.inbox.dataset.open = open ? "1" : "0";
     refs.inbox.dataset.count = String(count);
     refs.inboxToggle.setAttribute("aria-expanded", open ? "true" : "false");
@@ -262,30 +103,11 @@ export function createRenderer(refs, store) {
     refs.inboxCount.hidden = count === 0;
     refs.inboxCount.textContent = count;
     refs.inboxClear.hidden = !open || count === 0;
-    // 3C-2B: ADD no longer creates a Thought — it places the capture into the
-    // Composer. Still disabled on empty draft.
-    refs.inboxAdd.disabled = !(state.inbox && state.inbox.draft && state.inbox.draft.trim());
 
-    // Draft: keep the field in sync with state via pure value comparison
-    // (same caret-safe policy as the Composer input; no activeElement guard).
-    const draftEl = refs.inboxDraft;
-    if (draftEl.value !== (state.inbox ? state.inbox.draft : "")) {
-      draftEl.value = state.inbox ? state.inbox.draft : "";
-    }
-    // Auto-grow the draft up to 3 lines.
-    if (draftEl.value) {
-      draftEl.style.height = "auto";
-      draftEl.style.height = Math.min(3, draftEl.scrollHeight / 20) + "em";
-    } else {
-      draftEl.style.height = "";
-    }
-
-    // Thoughts list — rebuild when ids / text / refined / expansion / open change.
-    const listKey = thoughts.map((t) => t.id + ":" + t.originalText.length + (t.refinedText ? "+r" : "")).join("|")
-      + ":" + expandedIds.join(",") + ":" + (open ? "1" : "0");
-    // While a thought is being edited inline, keep its textarea alive — don't
-    // rebuild the list out from under it. (Edited/deleted cards force a rebuild
-    // via the explicit _listKey reset in commit().)
+    // Rebuild when identity / text / refined presence changes.
+    const listKey = thoughts.map((t) =>
+      t.id + ":" + (t.originalText || "").length + ":" + (t.refinedText ? "r" : "-") + ":" + (t.long ? "l" : "-")
+    ).join("|") + ":" + (open ? "1" : "0");
     if (editingThoughtId && thoughts.some((t) => t.id === editingThoughtId)) return;
     if (listKey === refs.inbox._listKey) return;
     refs.inbox._listKey = listKey;
@@ -295,100 +117,139 @@ export function createRenderer(refs, store) {
     if (!count) {
       const empty = document.createElement("p");
       empty.className = "pk-inbox-empty";
-      empty.textContent = "IDEAS YOU CAPTURE LIVE HERE";
+      empty.textContent = "Ideas you capture live here.";
       refs.inboxList.appendChild(empty);
       return;
     }
 
-    thoughts.forEach((t) => {
-      const expanded = expandedIds.includes(t.id);
+    /* 3E simplified Thought card:
+       · Default shows refined (optimized) text.
+       · Toggle to original when refined exists.
+       · Click body to edit the currently displayed version.
+       · COPY + DELETE are hover-only. */
+    const prevCount = refs.inbox._count || 0;
+    refs.inbox._count = count;
+    const shouldEnter = count > prevCount && prevCount > 0; // animate new arrivals (skip first paint)
+    thoughts.forEach((t, index) => {
+      const hasRefined = !!t.refinedText;
       const card = document.createElement("div");
-      card.className = "pk-thought";
+      card.className = "pk-thought" + (t.long ? " long" : "");
       card.dataset.id = t.id;
-      card.dataset.open = expanded ? "1" : "0";
+      card.dataset.mode = hasRefined ? "refined" : "original";
 
-      const head = document.createElement("div");
-      head.className = "pk-thought-head";
+      if (t.long) {
+        const docTag = document.createElement("div");
+        docTag.className = "pk-thought-doc";
+        const title = document.createElement("span");
+        title.className = "pk-thought-doc-title";
+        title.textContent = "LONG DOCUMENT";
+        const size = document.createElement("span");
+        size.className = "pk-thought-doc-size";
+        size.textContent = (t.chars || 0).toLocaleString() + " chars";
+        docTag.appendChild(title);
+        docTag.appendChild(size);
+        card.appendChild(docTag);
+      }
 
-      const src = document.createElement("span");
-      src.className = "pk-thought-src" + (t.source === "voice" ? " voice" : "");
-      src.textContent = t.source === "voice" ? "VOICE" : "TEXT";
+      let body;
+      if (hasRefined) {
+        const toggle = document.createElement("div");
+        toggle.className = "pk-thought-toggle";
+        const optBtn = document.createElement("button");
+        optBtn.type = "button";
+        optBtn.className = "pk-toggle-btn on";
+        optBtn.textContent = "优化后";
+        const origBtn = document.createElement("button");
+        origBtn.type = "button";
+        origBtn.className = "pk-toggle-btn";
+        origBtn.textContent = "优化前";
+        body = document.createElement("p");
+        body.className = "pk-thought-body";
+        body.textContent = t.refinedText;
+        const setMode = (mode) => {
+          card.dataset.mode = mode;
+          optBtn.classList.toggle("on", mode === "refined");
+          origBtn.classList.toggle("on", mode === "original");
+          body.textContent = mode === "refined" ? t.refinedText : t.originalText;
+        };
+        optBtn.addEventListener("click", () => setMode("refined"));
+        origBtn.addEventListener("click", () => setMode("original"));
+        toggle.appendChild(optBtn);
+        toggle.appendChild(origBtn);
+        card.appendChild(toggle);
+      } else {
+        body = document.createElement("p");
+        body.className = "pk-thought-body";
+        body.textContent = t.originalText;
+      }
 
+      body.setAttribute("role", "button");
+      body.setAttribute("tabindex", "0");
+      body.setAttribute("aria-label", "Edit thought");
+      body.title = "点击编辑";
+      const beginEdit = () => startThoughtEdit(t.id, body);
+      body.addEventListener("click", beginEdit);
+      body.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); beginEdit(); }
+      });
+      card.appendChild(body);
+
+      const foot = document.createElement("div");
+      foot.className = "pk-thought-foot";
+      const meta = document.createElement("span");
+      meta.className = "pk-thought-meta";
       const time = document.createElement("span");
       time.className = "pk-thought-time";
       time.textContent = fmtThoughtTime(t.updatedAt);
+      meta.appendChild(time);
+      foot.appendChild(meta);
 
-      const expand = document.createElement("button");
-      expand.type = "button";
-      expand.className = "pk-thought-expand";
-      expand.setAttribute("aria-label", expanded ? "Collapse thought" : "Expand thought");
-      expand.textContent = expanded ? "COLLAPSE" : "EXPAND";
-      expand.addEventListener("click", () => store.dispatch(act.inboxToggleExpanded(t.id)));
-
-      head.append(src, time, expand);
-      card.appendChild(head);
-
-      const original = document.createElement("p");
-      original.className = "pk-thought-original";
-      original.textContent = thoughtPreview(t, expanded ? 100000 : 42);
-      card.appendChild(original);
-
-      if (t.refinedText) {
-        const refined = document.createElement("p");
-        refined.className = "pk-thought-refined";
-        const tag = document.createElement("span");
-        tag.className = "pk-refined-tag";
-        tag.textContent = "REFINED";
-        refined.appendChild(tag);
-        refined.appendChild(document.createTextNode(t.refinedText));
-        card.appendChild(refined);
-      }
-
-      const actions = document.createElement("div");
-      actions.className = "pk-thought-actions";
-      const btn = (label, variant, primary) => {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "pk-thought-btn" + (primary ? " primary" : "");
-        b.textContent = label;
-        return b;
-      };
-      const send = btn("USE", "", true);
-      send.setAttribute("aria-label", "Use this thought in the prompt");
-      send.addEventListener("click", () => flowsRef.sendThoughtToPrompt(t.id));
-      const copyR = btn("COPY REFINED", "refined");
-      copyR.addEventListener("click", () => flowsRef.copyThoughtToClipboard(t.id, "refined"));
-      const copyO = btn("COPY ORIGINAL", "original");
-      copyO.addEventListener("click", () => flowsRef.copyThoughtToClipboard(t.id, "original"));
-      const edit = btn("EDIT", "");
-      edit.addEventListener("click", () => startThoughtEdit(t.id));
-      const del = btn("DELETE", "");
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "pk-thought-delete";
+      del.setAttribute("aria-label", "Delete thought");
+      del.textContent = "×";
       del.addEventListener("click", () => store.dispatch(act.inboxDelete(t.id)));
-      actions.append(send, copyR, copyO, edit, del);
-      card.appendChild(actions);
+      foot.appendChild(del);
 
+      // COPY button (hover-only, copies the currently displayed variant)
+      const copyBtn = document.createElement("button");
+      copyBtn.type = "button";
+      copyBtn.className = "pk-thought-copy";
+      copyBtn.setAttribute("aria-label", "Copy thought");
+      copyBtn.textContent = "COPY";
+      copyBtn.addEventListener("click", () => {
+        const mode = card.dataset.mode || (t.refinedText ? "refined" : "original");
+        if (copyFlow) copyFlow(t.id, mode);
+      });
+      foot.appendChild(copyBtn);
+
+      card.appendChild(foot);
+      if (shouldEnter && index === thoughts.length - 1) {
+        card.classList.add("pk-thought-enter");
+        clearTimeout(thoughtEnterTimer);
+        thoughtEnterTimer = setTimeout(() => card.classList.remove("pk-thought-enter"), 360);
+      }
       refs.inboxList.appendChild(card);
     });
   }
 
   /* ---- inline thought editor (edit → textarea → save/cancel) ---- */
   let editingThoughtId = null;
-  function startThoughtEdit(id) {
+  function startThoughtEdit(id, bodyEl) {
     editingThoughtId = id;
-    const card = refs.inboxList.querySelector(`.pk-thought[data-id="${id}"]`);
+    const card = bodyEl && bodyEl.closest(".pk-thought");
     if (!card) return;
-    const original = card.querySelector(".pk-thought-original");
-    if (!original) return;
-    const text = thoughtCopyText(
-      inboxThoughts(store.getState()).find((t) => t.id === id),
-      "original"
-    );
+    const t = inboxThoughts(store.getState()).find((thought) => thought.id === id);
+    if (!t) return;
+    const mode = card.dataset.mode || (t.refinedText ? "refined" : "original");
+    const text = mode === "refined" ? (t.refinedText || t.originalText) : t.originalText;
     const ta = document.createElement("textarea");
     ta.className = "pk-thought-edit-ta";
     ta.value = text;
     ta.rows = Math.min(6, Math.max(1, text.split("\n").length));
     ta.setAttribute("aria-label", "Edit thought");
-    original.replaceWith(ta);
+    bodyEl.replaceWith(ta);
     ta.focus();
     ta.setSelectionRange(ta.value.length, ta.value.length);
 
@@ -398,10 +259,13 @@ export function createRenderer(refs, store) {
       done = true;
       editingThoughtId = null;
       const next = (ta.value || "").trim();
-      if (save && next && next !== thoughtCopyText(inboxThoughts(store.getState()).find((t) => t.id === id), "original")) {
-        store.dispatch(act.inboxEdit(id, next)); // keeps id, rewrites originalText in place
+      if (save && next && next !== text) {
+        if (mode === "refined" && t.refinedText) {
+          store.dispatch(act.inboxRefine(id, next));
+        } else {
+          store.dispatch(act.inboxEdit(id, next));
+        }
       }
-      // Force a re-render of the list next pass (restore the read-only card).
       if (refs.inbox) delete refs.inbox._listKey;
     };
     ta.addEventListener("blur", () => commit(true));
@@ -437,19 +301,27 @@ export function createRenderer(refs, store) {
     refs.statusLabel.textContent = statusLabel(state);
 
     // workspace busy state for screen readers
-    refs.workspace.setAttribute("aria-busy", isProcessing(state) ? "true" : "false");
+    refs.workspace.setAttribute("aria-busy", (state.refinePending || state.voice === "processing") ? "true" : "false");
 
     // input — always mirror state (Bug #8: the old activeElement guard made
     // external state changes invisible while the Composer was focused, so the
     // DOM fell out of sync with state and the next keystroke reverted it).
     // A pure value comparison keeps the caret intact while still honoring
     // programmatic updates (voice append, REFINE results, USE take-back).
-    if (refs.input.value !== state.input) {
-      refs.input.value = state.input;
+    // 3D-RC2 GATE B 边说边浮现: while LISTENING the Composer mirrors the live
+    // voice preview (committed words + growing interim tail) — display-only &
+    // readOnly; the machine's state.input only ever holds committed finals.
+    const liveVoice = (state.voice === "listening" && state.voiceTranscript && state.voiceTranscript.text)
+      ? state.voiceTranscript.text : null;
+    const shownInput = liveVoice != null ? liveVoice : state.input;
+    if (refs.input.value !== shownInput) {
+      refs.input.value = shownInput;
     }
+    if (refs.input.readOnly !== (liveVoice != null)) refs.input.readOnly = liveVoice != null;
+    refs.input.classList.toggle("pk-voice-live", liveVoice != null);
     // 3C-3A §7: after UNDO/REDO the caret is restored to the entry's saved
     // selection (typing clears it in the machine — no repeated re-apply).
-    if (state.inputSelection && refs.input.value === state.input && refs.input.setSelectionRange) {
+    if (!liveVoice && state.inputSelection && refs.input.value === state.input && refs.input.setSelectionRange) {
       try {
         refs.input.setSelectionRange(state.inputSelection.start, state.inputSelection.end);
       } catch (e) { /* detached input — skip */ }
@@ -481,38 +353,37 @@ export function createRenderer(refs, store) {
     }
 
     // controls
-    // 3C-2B: bottom bar carries VOICE / REFINE only — the explicit final-send
-    // entry lives inside the Composer as #pk-submit (no standalone SEND key).
+    // 3E: bottom bar carries VOICE / REFINE / SUBMIT.
     refs.refine.disabled = !canRefine(state);
-    refs.refine.classList.toggle("busy", state.voice === "processing");
-    refs.c1.disabled = !customButtonsEnabled(state);
-    refs.c2.disabled = !customButtonsEnabled(state);
-    refs.c1.classList.toggle("busy", state.interaction === "improving");
-    refs.c1.dataset.busyTip = "IMPROVING…";
-    refs.c2.classList.toggle("busy", state.interaction === "rewriting");
-    refs.c2.dataset.busyTip = "REWRITING…";
+    const refinePending = !!state.refinePending;
+    refs.refine.classList.toggle("pending", refinePending);
+    refs.refine.classList.toggle("busy", !refinePending && state.voice === "processing");
+    refs.refine.setAttribute("aria-busy", refinePending ? "true" : "false");
+    refs.refine.dataset.tip = refinePending ? "REFINING…" : "REFINE → COMPOSER";
     refs.voice.classList.toggle("listening", state.voice === "listening");
+    refs.float.classList.toggle("pk-listening", state.voice === "listening");
     refs.voiceCaption.textContent =
       state.voice === "listening" ? "LISTENING"
       : state.voice === "processing" ? "PROCESSING"
       : state.voice === "error" ? "RETRY"
       : "VOICE";
     refs.voice.setAttribute("aria-pressed", state.voice === "listening" ? "true" : "false");
-    // Composer submit entry (3C-2B): enabled exactly when canConfirm() says the
-    // user has something to submit — idle/input with text, or a reviewable prompt.
     if (refs.submit) refs.submit.disabled = !canConfirm(state);
 
-    // minimized bubble & launcher pill visibility
+    // minimized bubble — Orb is the persistent desktop entry point.
     refs.minimized.hidden = state.window !== "minimized";
-    refs.pill.hidden = state.window !== "hidden";
 
     // views
-    renderSections(state);
-    renderEditor(state);
-    renderUnderstanding(state);
     renderVoice(state);
-    renderReviewbar(state);
+    const beforeInboxCount = Number(refs.inbox.dataset.count) || 0;
     renderInbox(state);
+    const afterInboxCount = Number(refs.inbox.dataset.count) || 0;
+    if (afterInboxCount > beforeInboxCount && beforeInboxCount > 0) {
+      // 3E paper-suck animation: the Composer text is pulled into the Inbox.
+      refs.input.classList.add("pk-submit-suck");
+      clearTimeout(submitAnimTimer);
+      submitAnimTimer = setTimeout(() => refs.input.classList.remove("pk-submit-suck"), 420);
+    }
     if (state.message !== prev.message) renderMessage(state);
     if (state.toast !== prev.toast) renderToast(state);
 
@@ -522,9 +393,6 @@ export function createRenderer(refs, store) {
           (prev.window === "hidden" || prev.window === "minimized" || prev.window === "launcher")) {
         if (state.interaction === "input") refs.input.focus();
         else refs.closeBtn.focus({ preventScroll: true });
-      }
-      if (state.window === "hidden" && lastTrigger && document.contains(lastTrigger)) {
-        lastTrigger.focus({ preventScroll: true });
       }
       if (state.window === "minimized") {
         refs.minimized.focus({ preventScroll: true });

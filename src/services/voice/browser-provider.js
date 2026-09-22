@@ -16,6 +16,57 @@ export function createBrowserSpeechProvider(win) {
   let active = false;      // this provider instance has a live recognition loop
   let carryText = "";      // accumulated transcript preserved across an auto-restart
   let lastEmitted = "";    // most recent text we reported (the carry baseline)
+  let segmentSeq = 0;      // final segments seen in this session (1-based per final).
+    // Incremented exactly once per NEW final segment. Same final re-raised as a
+    // duplicate browser event keeps the same seq. This lets the machine tell
+    // "same final re-emitted" (deduplicate) vs "genuinely two separate finals"
+    // (keep both, even when their text is identical — user repeated themselves).
+  let finalSig = null;     // { seq, isFinal, hash } — last signature we actually emitted for a FINAL.
+    // Ensures the onend fallback never re-emits a final already sent via onresult.
+  // VOICE-DUP: per-instance deduplication. A single recognition instance may see
+  // Chrome re-raise the SAME final result (with identical resultIndex + text)
+  // as a duplicate onresult. We must NOT re-add the same final portion to
+  // carryText a second time — otherwise carryText + fresh double-counts and
+  // leaks a duplicated transcript delta downstream. freshFinalForInstance tracks
+  // the already-committed final signature for *the current* recognition object,
+  // keyed by its lastFinal hash + lastFinalResultIndex. A genuinely new segment
+  // (or a new recognition instance after auto-restart, or a legitimately
+  // repeated utterance after an interim) gets a new signature and is added.
+  let instanceDedup = null; // { instance, resultIndex, hash }
+  function instanceKeyFor(r, resultIndex, freshText, isFinal) {
+    if (!isFinal) return null;
+    return {
+      instance: r,
+      resultIndex: Number(resultIndex) >>> 0,
+      hash: sha(String(freshText || ""))
+    };
+  }
+  function sameInstanceFinal(r, resultIndex, freshText) {
+    if (!instanceDedup) return false;
+    return instanceDedup.instance === r
+      && instanceDedup.resultIndex === (Number(resultIndex) >>> 0)
+      && instanceDedup.hash === sha(String(freshText || ""));
+  }
+  function sha(s) {
+    // Tiny stable 32-bit fingerprint — not crypto, but enough to distinguish
+    // 64KB-or-less transcripts reliably without a dependency.
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return h.toString(16).padStart(8, "0");
+  }
+  function sameSigAsLastFinal(seq, isFinal, text) {
+    if (!isFinal || !finalSig) return false;
+    return finalSig.seq === seq
+      && finalSig.isFinal === isFinal
+      && finalSig.hash === sha(String(text || ""));
+  }
+  function markFinalSig(seq, isFinal, text) {
+    if (!isFinal) { finalSig = null; return; }
+    finalSig = { seq, isFinal: true, hash: sha(String(text || "")) };
+  }
   let transcriptCb = () => {};
   let endCb = () => {};    // final end: user stop or real end, flow decides
   let errorCb = () => {};
@@ -36,6 +87,9 @@ export function createBrowserSpeechProvider(win) {
           active = true;
           carryText = ""; // fresh session: nothing carried over
           lastEmitted = "";
+          segmentSeq = 0;
+          finalSig = null;
+          instanceDedup = null;
           recognition = createRecognition();
           bindRecognition(recognition);
           recognition.start();
@@ -88,30 +142,59 @@ export function createBrowserSpeechProvider(win) {
       // pause → triggers an unwanted auto-restart → browser force-ends the
       // current instance → infinite restart loop.
       if (r !== recognition) return;
-      // Fresh segment for THIS recognition instance. When we auto-restarted,
-      // carryText holds the already-finalized baseline from before the pause;
-      // the new segment is appended so the session's transcript never loses
-      // a finished thought just because the browser split the stream.
-      let fresh = "";
-      let freshFinal = false;
-      for (let i = 0; i < e.results.length; i++) {
-        fresh += e.results[i][0].transcript;
-        if (e.results[i].isFinal) freshFinal = true;
+      // 3D-RC2 GATE A — finals-accumulation model. In continuous mode Chrome
+      // re-delivers the WHOLE accumulated result list on every event;
+      // e.resultIndex marks the FIRST result that changed. Only
+      // [resultIndex..] is new — iterating from 0 re-counts already-finalized
+      // segments, so carryText + "fresh" double-counted every earlier segment
+      // (the 3D duplication bug: segment 2+ arrived as carryText+allHistory).
+      const startIdx = Number(e.resultIndex) >>> 0;
+      let freshFinal = "";    // new FINAL text in this event (gets committed)
+      let freshInterim = "";   // new/updated INTERIM text (preview only)
+      for (let i = startIdx; i < e.results.length; i++) {
+        const res = e.results[i];
+        const txt = (res && res[0] && res[0].transcript) || "";
+        if (res && res.isFinal) freshFinal += txt;
+        else freshInterim += txt;
       }
-      if (fresh) {
-        const full = carryText + fresh;
-        transcriptCb(full, freshFinal);
-        if (freshFinal) {
-          carryText = full;      // baseline locked — future segments append after it
-          lastEmitted = full;
-        } else {
-          lastEmitted = full;    // so a stop() right after still reports the latest interim
+
+      if (freshFinal) {
+        // Duplicate-final replay guard (VOICE-DUP-01/03): Chrome can re-raise
+        // the SAME final (same instance + same resultIndex + same text). A
+        // genuinely new segment advances resultIndex inside the instance, or
+        // runs on a NEW instance after a pause auto-restart (instanceDedup is
+        // wiped there) — including a legal repeated utterance (VOICE-DUP-06).
+        if (sameInstanceFinal(r, startIdx, freshFinal)) {
+          return; // swallow duplicate: no carry, no emit, no seq change.
         }
-      } else if (carryText !== lastEmitted) {
-        // Restart boundary: new instance produced no text yet, but we hold a
-        // finalized baseline the flow hasn't seen. Deliver it as final.
-        transcriptCb(carryText, true);
+        instanceDedup = instanceKeyFor(r, startIdx, freshFinal, true);
+        segmentSeq += 1;              // exactly one bump per NEW final segment
+        carryText = carryText + freshFinal; // cumulative session transcript
         lastEmitted = carryText;
+        markFinalSig(segmentSeq, true, carryText);
+        transcriptCb(carryText, true, segmentSeq);
+        if (freshInterim) {
+          // Same event also carries the start of the next segment — surface
+          // it live (preview only; it commits when its own final arrives).
+          transcriptCb(carryText + freshInterim, false, segmentSeq);
+          lastEmitted = carryText + freshInterim;
+        }
+        return;
+      }
+      if (freshInterim) {
+        // Growing preview: committed finals + the live interim tail.
+        transcriptCb(carryText + freshInterim, false, segmentSeq);
+        lastEmitted = carryText + freshInterim;
+        return;
+      }
+      // Restart boundary: new instance produced no text yet, but we hold a
+      // finalized baseline the flow hasn't seen. Deliver it as final.
+      if (carryText !== lastEmitted) {
+        const seq = segmentSeq || 1;
+        if (sameSigAsLastFinal(seq, true, carryText)) return;
+        transcriptCb(carryText, true, seq);
+        lastEmitted = carryText;
+        markFinalSig(seq, true, carryText);
       }
     };
     r.onerror = (e) => {
@@ -122,7 +205,12 @@ export function createBrowserSpeechProvider(win) {
       if (e.error === "not-allowed" || e.error === "service-not-allowed") {
         errorCb("VOICE_UNAVAILABLE"); // permission denied / mic blocked
       } else if (e.error === "no-speech") {
-        errorCb("VOICE_NO_SPEECH");   // heard nothing — recoverable, retry or type
+        // 3D-RC2 GATE A — graceful silence: in continuous mode a silent pause
+        // makes the browser end the segment and onend auto-restarts the loop.
+        // Surfacing it as an error mid-loop would flip the UI to error state
+        // and make the machine DROP every transcript after the pause. Only
+        // forward no-speech when the loop is actually terminating.
+        if (!active || userStopped) errorCb("VOICE_NO_SPEECH");
       } else {
         errorCb("VOICE_ERROR");
       }
@@ -140,8 +228,12 @@ export function createBrowserSpeechProvider(win) {
         // Deliver any finalized baseline the flow hasn't seen yet (e.g. the
         // browser ended without a final onresult right before stop()).
         if (carryText !== lastEmitted) {
-          transcriptCb(carryText, true);
-          lastEmitted = carryText;
+          const seq = segmentSeq || 1;
+          if (!sameSigAsLastFinal(seq, true, carryText)) {
+            transcriptCb(carryText, true, seq);
+            lastEmitted = carryText;
+            markFinalSig(seq, true, carryText);
+          }
         }
         endCb(); // final end → flow decides what to do with the accumulated text
         return;
@@ -149,6 +241,8 @@ export function createBrowserSpeechProvider(win) {
       try {
         const next = createRecognition();
         recognition = next;   // update the instance ref BEFORE binding, so the
+        instanceDedup = null; // new instance: previous per-instance dedup keys
+                              // are irrelevant; fresh resultIndex starts at 0.
         bindRecognition(next); // instance guard in the new handlers sees it
         next.start(); // the carry baseline survives into the next segment
       } catch (err) {
