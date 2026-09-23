@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PromptKey — Think naturally. Prompt precisely.</title>
 <meta name="description" content="PromptKey Float — a persistent floating AI input interface. Transform natural thoughts into structured prompts.">
+<meta name="theme-color" content="#1D1D1F">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="stylesheet" href="css/float.css">
 </head>
 <body>
@@ -159,5 +163,12 @@
 <div id="pk-toast" role="status" aria-live="polite"></div>
 
 <script type="module" src="src/main.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    });
+  }
+</script>
 </body>
 </html>
