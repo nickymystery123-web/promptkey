@@ -143,6 +143,26 @@ button{font-family:inherit;cursor:pointer}
 }
 .pk-win-btn:hover{background:var(--pk-surface-secondary);color:var(--pk-text-primary);border-color:var(--pk-border)}
 
+/* ---- PiP Pin Button ---- */
+.pk-pin-btn{
+  appearance:none;width:26px;height:26px;border-radius:50%;
+  border:1px solid transparent;background:transparent;color:var(--pk-text-secondary);
+  display:flex;align-items:center;justify-content:center;
+  transition:all .18s var(--pk-ease);cursor:pointer;
+}
+.pk-pin-btn:hover{background:var(--pk-surface-secondary);color:var(--pk-text-primary);border-color:var(--pk-border)}
+.pk-pin-btn svg{width:14px;height:14px}
+.pk-pin-btn[data-active="true"]{color:var(--pk-text-primary);background:var(--pk-surface-secondary)}
+
+/* ---- PiP Mode: float 不再 fixed，填满 PiP 窗口 ---- */
+#pk-float.pk-pip-mode{
+  position:static !important;
+  width:100% !important;height:100% !important;
+  max-height:none !important;
+  border:none;border-radius:0;
+  box-shadow:none;
+}
+
 /* ---- Layer 02 · Workspace ---- */
 .pk-workspace{
   flex:1;min-height:0;margin:14px 18px 0;

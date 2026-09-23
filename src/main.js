@@ -16,6 +16,7 @@ import { createLocalStorageService } from "./services/storage/local-storage.js";
 import { createFlows } from "./flows/prompt-flow.js";
 import { collectRefs, createRenderer } from "./ui/renderer.js";
 import { createWindowManager } from "./ui/window-manager.js";
+import { createPipManager } from "./ui/pip-manager.js";
 import { createOrbController } from "./ui/orb.js";
 import { isVoiceToggleShortcut, voiceShortcutHint } from "./ui/shortcuts.js";
 
@@ -43,6 +44,17 @@ function boot() {
   renderer.bindFlows(flows); // inbox send/copy callbacks
   const wm = createWindowManager({ refs, store, storage, win: window });
   wm.init();
+  const pip = createPipManager({ refs, store });
+  if (pip.isSupported()) {
+    const pinBtn = document.getElementById("pk-pin-btn");
+    if (pinBtn) {
+      pinBtn.hidden = false;
+      pinBtn.addEventListener("click", () => {
+        pip.toggle();
+        pinBtn.dataset.active = pip.isActive() ? "true" : "false";
+      });
+    }
+  }
   /* PHASE 3D RC1: PromptKey Orb — 状态管道（listening/processing/ready/error
      从 store 订阅；hover/press 指针驱动；双击/长按为 RC2 预留桩） */
   const orb = createOrbController({ refs, win: window });
@@ -61,8 +73,14 @@ function boot() {
       store.dispatch(act.openFloat());
     });
   });
-  refs.minBtn.addEventListener("click", () => store.dispatch(act.minimizeFloat()));
-  refs.closeBtn.addEventListener("click", () => flows.closeFloat());
+  refs.minBtn.addEventListener("click", () => {
+    if (pip.isActive()) { pip.exitPip(); const pb = document.getElementById("pk-pin-btn"); if (pb) pb.dataset.active = "false"; }
+    store.dispatch(act.minimizeFloat());
+  });
+  refs.closeBtn.addEventListener("click", () => {
+    if (pip.isActive()) { pip.exitPip(); const pb = document.getElementById("pk-pin-btn"); if (pb) pb.dataset.active = "false"; }
+    flows.closeFloat();
+  });
   refs.minimized.addEventListener("click", () => {
     if (refs.minimized.dataset.moved === "1") { refs.minimized.dataset.moved = ""; return; }
     store.dispatch(act.restoreFloat());
